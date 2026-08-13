@@ -1,0 +1,4 @@
+* text=auto
+decompiled/**/*.cs text eol=crlf
+decompiled/**/*.csproj text eol=crlf
+decompiled/** whitespace=-trailing-space

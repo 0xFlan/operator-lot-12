@@ -1,0 +1,50 @@
+# Unity generated state
+source/unity_project/Library/
+source/unity_project/Temp/
+source/unity_project/Logs/
+source/unity_project/Obj/
+source/unity_project/Builds/
+source/unity_project/UserSettings/
+source/unity_project/HDRPDefaultResources/
+
+# OPERATOR-derived and generated map inputs
+source/unity_project/Assets/VektorKillHouse/Native/**
+!source/unity_project/Assets/VektorKillHouse/Native/README-ASSET-PLACEHOLDER.md
+source/unity_project/Assets/VektorKillHouse/Scenes/**
+!source/unity_project/Assets/VektorKillHouse/Scenes/README-ASSET-PLACEHOLDER.md
+source/operator_map_packages/community.vektor-modular-killhouse/content/**
+!source/operator_map_packages/community.vektor-modular-killhouse/content/README-ASSET-PLACEHOLDER.md
+source/operator_map_packages/community.vektor-modular-killhouse/media/**
+!source/operator_map_packages/community.vektor-modular-killhouse/media/README-ASSET-PLACEHOLDER.md
+source/package/media/
+
+# Private workspace evidence and tooling
+source/evidence/
+source/qa/
+release/
+staging/
+reports/
+logs/
+backups/
+native_exports/
+
+# Build outputs and binaries
+**/bin/
+**/obj/
+__pycache__/
+*.py[cod]
+*.dll
+*.pdb
+*.zip
+*.exe
+*.log
+
+# Embedded decompiler resources are intentionally omitted
+decompiled/**/OperatorKillHouse.NativeMaterials.*.json
+
+# IDE and operating-system state
+.vs/
+.idea/
+.vscode/
+Thumbs.db
+.DS_Store

@@ -1,0 +1,21 @@
+{
+  "schema": "vektor-killhouse/targeted-native-extraction-spec@1",
+  "sourceScene": "KillhousePVP Day",
+  "assets": [
+    { "type": "Mesh", "name": "Wall2Meter", "collection": "sharedassets8.assets", "outputFolder": "TrainingWalls/Meshes" },
+    { "type": "Mesh", "name": "Wall2MeterDoor", "collection": "sharedassets8.assets", "outputFolder": "TrainingWalls/Meshes" },
+    { "type": "Mesh", "name": "Wall2MeterDoorCollision", "collection": "sharedassets8.assets", "outputFolder": "TrainingWalls/Collision" },
+    { "type": "Mesh", "name": "Wall2MeterWindow", "collection": "sharedassets8.assets", "outputFolder": "TrainingWalls/Meshes" },
+    { "type": "Mesh", "name": "Wall2MeterWindowCollision", "collection": "sharedassets8.assets", "outputFolder": "TrainingWalls/Collision" },
+    { "type": "Mesh", "name": "Wall4MeterWindow", "collection": "sharedassets8.assets", "outputFolder": "TrainingWalls/Meshes" },
+    { "type": "Mesh", "name": "Wall4MeterWindowCollision", "collection": "sharedassets8.assets", "outputFolder": "TrainingWalls/Collision" },
+    { "type": "Material", "name": "ChipBoardShader", "collection": "sharedassets8.assets", "outputFolder": "TrainingWalls/SourceMaterials" },
+    { "type": "Material", "name": "PlyWoodShader", "collection": "sharedassets8.assets", "outputFolder": "TrainingWalls/SourceMaterials" },
+    { "type": "Texture2D", "name": "Chipboard_D", "collection": "sharedassets8.assets", "outputFolder": "TrainingWalls/Textures" },
+    { "type": "Texture2D", "name": "Chipboard_N", "collection": "sharedassets8.assets", "outputFolder": "TrainingWalls/Textures" },
+    { "type": "Texture2D", "name": "ChipBoardShader_MaskMap", "collection": "sharedassets8.assets", "outputFolder": "TrainingWalls/Textures" },
+    { "type": "Texture2D", "name": "Plywood_D", "collection": "sharedassets8.assets", "outputFolder": "TrainingWalls/Textures" },
+    { "type": "Texture2D", "name": "Plywood_N", "collection": "sharedassets8.assets", "outputFolder": "TrainingWalls/Textures" },
+    { "type": "Texture2D", "name": "PlyWoodShader_MaskMap", "collection": "sharedassets8.assets", "outputFolder": "TrainingWalls/Textures" }
+  ]
+}

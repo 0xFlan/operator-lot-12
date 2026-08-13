@@ -1,0 +1,587 @@
+﻿{
+    "schema":  "vektor-killhouse/targeted-native-extraction-spec@1",
+    "sourceScene":  "Suburb Day",
+    "assets":  [
+                   {
+                       "type":  "Mesh",
+                       "name":  "Bed_queen",
+                       "collection":  "sharedassets4.assets",
+                       "outputFolder":  "Residential/Meshes"
+                   },
+                   {
+                       "type":  "Mesh",
+                       "name":  "Book_set_bookshelf_A",
+                       "collection":  "sharedassets4.assets",
+                       "outputFolder":  "Residential/Meshes"
+                   },
+                   {
+                       "type":  "Mesh",
+                       "name":  "Bookshelf",
+                       "collection":  "sharedassets4.assets",
+                       "outputFolder":  "Residential/Meshes"
+                   },
+                   {
+                       "type":  "Mesh",
+                       "name":  "Carpet_hallway",
+                       "collection":  "sharedassets4.assets",
+                       "outputFolder":  "Residential/Meshes"
+                   },
+                   {
+                       "type":  "Mesh",
+                       "name":  "D_TV_standing",
+                       "collection":  "sharedassets4.assets",
+                       "outputFolder":  "Residential/Meshes"
+                   },
+                   {
+                       "type":  "Mesh",
+                       "name":  "Door_interior",
+                       "collection":  "sharedassets4.assets",
+                       "outputFolder":  "Residential/Meshes"
+                   },
+                   {
+                       "type":  "Mesh",
+                       "name":  "Floor_12x_8x",
+                       "collection":  "sharedassets4.assets",
+                       "outputFolder":  "Residential/Meshes"
+                   },
+                   {
+                       "type":  "Mesh",
+                       "name":  "Floor_5x_5x",
+                       "collection":  "sharedassets4.assets",
+                       "outputFolder":  "Residential/Meshes"
+                   },
+                   {
+                       "type":  "Mesh",
+                       "name":  "Kitcabinet_full_fridge",
+                       "collection":  "sharedassets4.assets",
+                       "outputFolder":  "Residential/Meshes"
+                   },
+                   {
+                       "type":  "Mesh",
+                       "name":  "Kitcabinet_low_1x_A",
+                       "collection":  "sharedassets4.assets",
+                       "outputFolder":  "Residential/Meshes"
+                   },
+                   {
+                       "type":  "Mesh",
+                       "name":  "Kitchen_table_large",
+                       "collection":  "sharedassets4.assets",
+                       "outputFolder":  "Residential/Meshes"
+                   },
+                   {
+                       "type":  "Mesh",
+                       "name":  "Lamp_bedroom",
+                       "collection":  "sharedassets4.assets",
+                       "outputFolder":  "Residential/Meshes"
+                   },
+                   {
+                       "type":  "Mesh",
+                       "name":  "Lamp_ceiling_circle",
+                       "collection":  "sharedassets4.assets",
+                       "outputFolder":  "Residential/Meshes"
+                   },
+                   {
+                       "type":  "Mesh",
+                       "name":  "Lamp_kitchen_A",
+                       "collection":  "sharedassets4.assets",
+                       "outputFolder":  "Residential/Meshes"
+                   },
+                   {
+                       "type":  "Mesh",
+                       "name":  "Sidetable_A",
+                       "collection":  "sharedassets4.assets",
+                       "outputFolder":  "Residential/Meshes"
+                   },
+                   {
+                       "type":  "Mesh",
+                       "name":  "Sofa_A",
+                       "collection":  "sharedassets4.assets",
+                       "outputFolder":  "Residential/Meshes"
+                   },
+                   {
+                       "type":  "Mesh",
+                       "name":  "Sofa_B",
+                       "collection":  "sharedassets4.assets",
+                       "outputFolder":  "Residential/Meshes"
+                   },
+                   {
+                       "type":  "Mesh",
+                       "name":  "T_bathtub",
+                       "collection":  "sharedassets4.assets",
+                       "outputFolder":  "Residential/Meshes"
+                   },
+                   {
+                       "type":  "Mesh",
+                       "name":  "T_sink",
+                       "collection":  "sharedassets4.assets",
+                       "outputFolder":  "Residential/Meshes"
+                   },
+                   {
+                       "type":  "Mesh",
+                       "name":  "T_toilet",
+                       "collection":  "sharedassets4.assets",
+                       "outputFolder":  "Residential/Meshes"
+                   },
+                   {
+                       "type":  "Mesh",
+                       "name":  "Workdesk_solo",
+                       "collection":  "sharedassets4.assets",
+                       "outputFolder":  "Residential/Meshes"
+                   },
+                   {
+                       "type":  "Material",
+                       "name":  "Bed",
+                       "collection":  "sharedassets4.assets",
+                       "pathId":  51,
+                       "outputFolder":  "Residential/SourceMaterials"
+                   },
+                   {
+                       "type":  "Material",
+                       "name":  "Bedroom_Closets",
+                       "collection":  "sharedassets2.assets",
+                       "pathId":  171,
+                       "outputFolder":  "Residential/SourceMaterials"
+                   },
+                   {
+                       "type":  "Material",
+                       "name":  "Books",
+                       "collection":  "sharedassets3.assets",
+                       "pathId":  127,
+                       "outputFolder":  "Residential/SourceMaterials"
+                   },
+                   {
+                       "type":  "Material",
+                       "name":  "Carpet_B",
+                       "collection":  "sharedassets4.assets",
+                       "pathId":  54,
+                       "outputFolder":  "Residential/SourceMaterials"
+                   },
+                   {
+                       "type":  "Material",
+                       "name":  "Devices_On",
+                       "collection":  "sharedassets2.assets",
+                       "pathId":  175,
+                       "outputFolder":  "Residential/SourceMaterials"
+                   },
+                   {
+                       "type":  "Material",
+                       "name":  "Door_White",
+                       "collection":  "sharedassets4.assets",
+                       "pathId":  61,
+                       "outputFolder":  "Residential/SourceMaterials"
+                   },
+                   {
+                       "type":  "Material",
+                       "name":  "Fireplace",
+                       "collection":  "sharedassets3.assets",
+                       "pathId":  131,
+                       "outputFolder":  "Residential/SourceMaterials"
+                   },
+                   {
+                       "type":  "Material",
+                       "name":  "In_Floor_Basement",
+                       "collection":  "sharedassets4.assets",
+                       "pathId":  73,
+                       "outputFolder":  "Residential/SourceMaterials"
+                   },
+                   {
+                       "type":  "Material",
+                       "name":  "In_Floor_Carpet",
+                       "collection":  "sharedassets4.assets",
+                       "pathId":  74,
+                       "outputFolder":  "Residential/SourceMaterials"
+                   },
+                   {
+                       "type":  "Material",
+                       "name":  "Kitchen_Cabinet_Marble",
+                       "collection":  "sharedassets2.assets",
+                       "pathId":  178,
+                       "outputFolder":  "Residential/SourceMaterials"
+                   },
+                   {
+                       "type":  "Material",
+                       "name":  "Kitchen_Cabinet_Wood",
+                       "collection":  "sharedassets2.assets",
+                       "pathId":  180,
+                       "outputFolder":  "Residential/SourceMaterials"
+                   },
+                   {
+                       "type":  "Material",
+                       "name":  "Kitchen_TableChair",
+                       "collection":  "sharedassets2.assets",
+                       "pathId":  182,
+                       "outputFolder":  "Residential/SourceMaterials"
+                   },
+                   {
+                       "type":  "Material",
+                       "name":  "Lamps_House_Off",
+                       "collection":  "sharedassets2.assets",
+                       "pathId":  183,
+                       "outputFolder":  "Residential/SourceMaterials"
+                   },
+                   {
+                       "type":  "Material",
+                       "name":  "Sofa_House",
+                       "collection":  "sharedassets4.assets",
+                       "pathId":  108,
+                       "outputFolder":  "Residential/SourceMaterials"
+                   },
+                   {
+                       "type":  "Material",
+                       "name":  "Toilet_House",
+                       "collection":  "sharedassets4.assets",
+                       "pathId":  111,
+                       "outputFolder":  "Residential/SourceMaterials"
+                   },
+                   {
+                       "type":  "Material",
+                       "name":  "WorkDesk",
+                       "collection":  "sharedassets2.assets",
+                       "pathId":  188,
+                       "outputFolder":  "Residential/SourceMaterials"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "Bed_BaseColor",
+                       "collection":  "sharedassets4.assets",
+                       "pathId":  587,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "Bed_MaskMap",
+                       "collection":  "sharedassets4.assets",
+                       "pathId":  610,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "Bed_Normal",
+                       "collection":  "sharedassets4.assets",
+                       "pathId":  598,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "Bedroom_Closets_BaseColor",
+                       "collection":  "sharedassets2.assets",
+                       "pathId":  1060,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "Bedroom_Closets_MaskMap",
+                       "collection":  "sharedassets2.assets",
+                       "pathId":  547,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "Bedroom_Closets_Normal",
+                       "collection":  "sharedassets2.assets",
+                       "pathId":  694,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "Books_BaseColor",
+                       "collection":  "sharedassets3.assets",
+                       "pathId":  528,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "Books_MaskMap",
+                       "collection":  "sharedassets3.assets",
+                       "pathId":  513,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "Books_Normal",
+                       "collection":  "sharedassets3.assets",
+                       "pathId":  592,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "Carpet_A_MaskMap",
+                       "collection":  "sharedassets3.assets",
+                       "pathId":  258,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "Carpet_A_Normal",
+                       "collection":  "sharedassets3.assets",
+                       "pathId":  320,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "Carpet_B_BaseColor",
+                       "collection":  "sharedassets4.assets",
+                       "pathId":  313,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "Concrete1_DetailMap",
+                       "collection":  "sharedassets3.assets",
+                       "pathId":  731,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "Devices_BaseColor",
+                       "collection":  "sharedassets2.assets",
+                       "pathId":  457,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "Devices_Emissive",
+                       "collection":  "sharedassets2.assets",
+                       "pathId":  1109,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "Devices_MaskMap",
+                       "collection":  "sharedassets2.assets",
+                       "pathId":  466,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "Devices_Normal",
+                       "collection":  "sharedassets2.assets",
+                       "pathId":  1021,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "Door_White_BaseColor",
+                       "collection":  "sharedassets1.assets",
+                       "pathId":  1154,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "Door_White_MaskMap",
+                       "collection":  "sharedassets4.assets",
+                       "pathId":  328,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "Door_White_Normal",
+                       "collection":  "sharedassets4.assets",
+                       "pathId":  278,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "Fireplace_BaseColor",
+                       "collection":  "sharedassets3.assets",
+                       "pathId":  316,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "Fireplace_MaskMap",
+                       "collection":  "sharedassets3.assets",
+                       "pathId":  759,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "Fireplace_Normal",
+                       "collection":  "sharedassets3.assets",
+                       "pathId":  255,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "Floor_Basement_BaseColor",
+                       "collection":  "sharedassets4.assets",
+                       "pathId":  389,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "Floor_Basement_MaskMap",
+                       "collection":  "sharedassets4.assets",
+                       "pathId":  545,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "Floor_Basement_Normal",
+                       "collection":  "sharedassets4.assets",
+                       "pathId":  421,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "In_Floorcarpet_BaseColor",
+                       "collection":  "sharedassets4.assets",
+                       "pathId":  342,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "In_Floorcarpet_Normal",
+                       "collection":  "sharedassets4.assets",
+                       "pathId":  486,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "Kitchen_Cabinet_Marble_BaseColor",
+                       "collection":  "sharedassets2.assets",
+                       "pathId":  877,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "Kitchen_Cabinet_Marble_MaskMap",
+                       "collection":  "sharedassets2.assets",
+                       "pathId":  1098,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "Kitchen_Cabinet_Wood_BaseColor",
+                       "collection":  "sharedassets2.assets",
+                       "pathId":  402,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "Kitchen_Cabinet_Wood_MaskMap",
+                       "collection":  "sharedassets2.assets",
+                       "pathId":  786,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "Kitchen_Cabinet_Wood_Normal",
+                       "collection":  "sharedassets2.assets",
+                       "pathId":  719,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "Kitchen_TableChair_BaseColor",
+                       "collection":  "sharedassets2.assets",
+                       "pathId":  965,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "Kitchen_TableChair_MaskMap",
+                       "collection":  "sharedassets2.assets",
+                       "pathId":  958,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "Kitchen_TableChair_Normal",
+                       "collection":  "sharedassets2.assets",
+                       "pathId":  408,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "Lamps_House_BaseColor",
+                       "collection":  "sharedassets2.assets",
+                       "pathId":  663,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "Lamps_House_Emissive",
+                       "collection":  "sharedassets2.assets",
+                       "pathId":  955,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "Lamps_House_MaskMap",
+                       "collection":  "sharedassets2.assets",
+                       "pathId":  1110,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "Lamps_House_Normal",
+                       "collection":  "sharedassets2.assets",
+                       "pathId":  881,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "Sofa_House_BaseColor",
+                       "collection":  "sharedassets4.assets",
+                       "pathId":  334,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "Sofa_House_MaskMap",
+                       "collection":  "sharedassets4.assets",
+                       "pathId":  219,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "Sofa_House_Normal",
+                       "collection":  "sharedassets4.assets",
+                       "pathId":  419,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "Toilet_House_BaseColor",
+                       "collection":  "sharedassets4.assets",
+                       "pathId":  269,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "Toilet_House_MaskMap",
+                       "collection":  "sharedassets4.assets",
+                       "pathId":  283,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "Toilet_House_Normal",
+                       "collection":  "sharedassets4.assets",
+                       "pathId":  504,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "WorkDesk_BaseColor",
+                       "collection":  "sharedassets2.assets",
+                       "pathId":  837,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "WorkDesk_MaskMap",
+                       "collection":  "sharedassets2.assets",
+                       "pathId":  443,
+                       "outputFolder":  "Residential/Textures"
+                   },
+                   {
+                       "type":  "Texture2D",
+                       "name":  "WorkDesk_Normal",
+                       "collection":  "sharedassets2.assets",
+                       "pathId":  814,
+                       "outputFolder":  "Residential/Textures"
+                   }
+               ]
+}

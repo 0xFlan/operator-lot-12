@@ -1,0 +1,314 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://operator-mod-api.dev/schemas/operator-map-package-v2.json",
+  "title": "OPERATOR data-only map package v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "packageId", "displayName", "version", "maps", "files"],
+  "properties": {
+    "$schema": { "const": "https://operator-mod-api.dev/schemas/operator-map-package-v2.json" },
+    "schemaVersion": { "const": 2 },
+    "packageId": { "$ref": "#/$defs/namespacedId" },
+    "displayName": { "$ref": "#/$defs/displayText" },
+    "version": { "$ref": "#/$defs/semanticVersion" },
+    "maps": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 16,
+      "items": { "$ref": "#/$defs/map" }
+    },
+    "files": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 128,
+      "items": { "$ref": "#/$defs/file" }
+    }
+  },
+  "$defs": {
+    "namespacedId": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 96,
+      "pattern": "^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+$"
+    },
+    "localId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$"
+    },
+    "displayText": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "semanticVersion": {
+      "type": "string",
+      "minLength": 5,
+      "maxLength": 64,
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*))*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$"
+    },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 240,
+      "pattern": "^(?!/)(?!.*\\\\)(?!.*:)(?!.*(?:^|/)\\.{1,2}(?:/|$))[^\\u0000-\\u001f\\u007f]+$"
+    },
+    "map": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mapId", "displayName", "sceneBundle", "dependencyBundles", "scenePath", "previewImage", "operations"],
+      "properties": {
+        "mapId": { "$ref": "#/$defs/namespacedId" },
+        "displayName": { "$ref": "#/$defs/displayText" },
+        "sceneBundle": { "$ref": "#/$defs/relativePath" },
+        "dependencyBundles": {
+          "type": "array",
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/relativePath" }
+        },
+        "scenePath": {
+          "type": "string",
+          "minLength": 14,
+          "maxLength": 240,
+          "pattern": "^Assets/(?!.*(?:^|/)\\.{1,2}(?:/|$))[^\\\\:\\u0000-\\u001f\\u007f]+\\.unity$"
+        },
+        "sceneVariants": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 32,
+          "items": { "$ref": "#/$defs/sceneVariant" }
+        },
+        "previewImage": { "$ref": "#/$defs/relativePath" },
+        "externalTonemapLut": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/externalTonemapLut" }
+          ]
+        },
+        "runtimeTerrain": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/runtimeTerrain" }
+          ]
+        },
+        "runtimeCompanion": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/runtimeCompanion" }
+          ]
+        },
+        "operations": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": { "$ref": "#/$defs/operation" }
+        }
+      }
+    },
+    "sceneVariant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "scenePath"],
+      "properties": {
+        "id": { "$ref": "#/$defs/localId" },
+        "scenePath": {
+          "type": "string",
+          "minLength": 14,
+          "maxLength": 240,
+          "pattern": "^Assets/(?!.*(?:^|/)\\.{1,2}(?:/|$))[^\\\\:\\u0000-\\u001f\\u007f]+\\.unity$"
+        }
+      }
+    },
+    "runtimeCompanion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pluginGuid", "pluginVersion", "sha256", "readyMarkerName", "failureMarkerName"],
+      "properties": {
+        "pluginGuid": {
+          "allOf": [
+            { "$ref": "#/$defs/namespacedId" },
+            { "not": { "enum": ["operator.modapi", "operator.modded-operations"] } }
+          ]
+        },
+        "pluginVersion": { "$ref": "#/$defs/semanticVersion" },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "readyMarkerName": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^(?!\\s)(?!.*\\s$)[^/\\\\\\u0000-\\u001f\\u007f-\\u009f]+$" },
+        "failureMarkerName": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^(?!\\s)(?!.*\\s$)[^/\\\\\\u0000-\\u001f\\u007f-\\u009f]+$" }
+      }
+    },
+    "externalTonemapLut": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "dimension", "format"],
+      "properties": {
+        "path": { "$ref": "#/$defs/relativePath" },
+        "dimension": { "type": "integer", "enum": [16, 32, 64] },
+        "format": { "const": "rgba-half" }
+      }
+    },
+    "runtimeTerrain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rootObject", "dependencyBundle", "heightPayload", "heightEncoding", "surfaceWeightsPayload", "surfaceWeightsEncoding", "heightmapResolution", "alphamapResolution", "baseMapResolution", "detailResolution", "detailResolutionPerPatch", "origin", "size", "layers"],
+      "properties": {
+        "rootObject": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "dependencyBundle": { "$ref": "#/$defs/relativePath" },
+        "heightPayload": { "$ref": "#/$defs/unityAssetPath" },
+        "heightEncoding": { "const": "rg16-unorm-be" },
+        "surfaceWeightsPayload": { "$ref": "#/$defs/unityAssetPath" },
+        "surfaceWeightsEncoding": { "const": "rgb8-unorm" },
+        "heightmapResolution": { "enum": [33, 65, 129, 257, 513, 1025, 2049, 4097] },
+        "alphamapResolution": { "enum": [32, 64, 128, 256, 512, 1024, 2048, 4096] },
+        "baseMapResolution": { "enum": [16, 32, 64, 128, 256, 512, 1024, 2048, 4096] },
+        "detailResolution": { "enum": [32, 64, 128, 256, 512, 1024, 2048, 4096] },
+        "detailResolutionPerPatch": { "enum": [8, 16, 32, 64, 128] },
+        "origin": { "$ref": "#/$defs/terrainOrigin" },
+        "size": { "$ref": "#/$defs/terrainSize" },
+        "layers": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": { "$ref": "#/$defs/runtimeTerrainLayer" }
+        }
+      }
+    },
+    "unityAssetPath": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 240,
+      "pattern": "^[Aa]ssets/(?!.*(?:^|/)\\.{1,2}(?:/|$))[^\\\\:\\u0000-\\u001f\\u007f]+$"
+    },
+    "terrainOrigin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y", "z"],
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "z": { "type": "number" }
+      }
+    },
+    "terrainSize": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["width", "height", "length"],
+      "properties": {
+        "width": { "type": "number", "minimum": 1, "maximum": 100000 },
+        "height": { "type": "number", "minimum": 0.1, "maximum": 10000 },
+        "length": { "type": "number", "minimum": 1, "maximum": 100000 }
+      }
+    },
+    "runtimeTerrainLayer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "diffuse", "normal", "mask", "tileSizeX", "tileSizeZ", "normalScale", "metallic", "smoothness"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "diffuse": { "$ref": "#/$defs/unityAssetPath" },
+        "normal": { "$ref": "#/$defs/unityAssetPath" },
+        "mask": { "$ref": "#/$defs/unityAssetPath" },
+        "tileSizeX": { "type": "number", "minimum": 0.01, "maximum": 10000 },
+        "tileSizeZ": { "type": "number", "minimum": 0.01, "maximum": 10000 },
+        "normalScale": { "type": "number", "minimum": 0, "maximum": 8 },
+        "metallic": { "type": "number", "minimum": 0, "maximum": 1 },
+        "smoothness": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "operation": {
+      "type": "object",
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": { "mode": { "const": "pve" } },
+            "required": ["mode"]
+          },
+          "then": { "required": ["minEnemies", "maxEnemies"] },
+          "else": {
+            "not": {
+              "anyOf": [
+                { "required": ["minEnemies"] },
+                { "required": ["maxEnemies"] },
+                { "required": ["pveAiProfile"] }
+              ]
+            }
+          }
+        }
+      ],
+      "required": ["operationId", "displayName", "displayOrder", "mode", "areaOfOperation", "sitrep", "minPlayers", "maxPlayers", "spawnSet", "infiltrations", "timeCodes", "defaultTimeCode"],
+      "properties": {
+        "operationId": { "$ref": "#/$defs/namespacedId" },
+        "displayName": { "$ref": "#/$defs/displayText" },
+        "displayOrder": { "type": "integer", "minimum": 0, "maximum": 1023 },
+        "mode": { "enum": ["pvp", "pve"] },
+        "areaOfOperation": { "$ref": "#/$defs/displayText" },
+        "sitrep": { "type": "string", "minLength": 1, "maxLength": 4000 },
+        "minPlayers": { "type": "integer", "minimum": 1, "maximum": 64 },
+        "maxPlayers": { "type": "integer", "minimum": 1, "maximum": 64 },
+        "minEnemies": { "type": "integer", "minimum": 1, "maximum": 64 },
+        "maxEnemies": { "type": "integer", "minimum": 1, "maximum": 64 },
+        "pveAiProfile": { "$ref": "#/$defs/pveAiProfile" },
+        "spawnSet": { "$ref": "#/$defs/localId" },
+        "infiltrations": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "items": { "$ref": "#/$defs/infiltration" }
+        },
+        "timeCodes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^(?:[01][0-9]|2[0-3])[0-5][0-9]$" }
+        },
+        "defaultTimeCode": { "type": "string", "pattern": "^(?:[01][0-9]|2[0-3])[0-5][0-9]$" }
+      }
+    },
+    "pveAiProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "detectionRangeMeters", "fieldOfViewDegrees", "maximumEffectiveRangeMeters", "wanderDistanceMeters", "useComms", "counterSuppression"],
+      "properties": {
+        "id": { "$ref": "#/$defs/localId" },
+        "detectionRangeMeters": { "type": "number", "minimum": 5, "maximum": 250 },
+        "fieldOfViewDegrees": { "type": "number", "minimum": 30, "maximum": 180 },
+        "maximumEffectiveRangeMeters": {
+          "oneOf": [
+            { "const": -1 },
+            { "type": "number", "minimum": 5, "maximum": 300 }
+          ]
+        },
+        "wanderDistanceMeters": { "type": "integer", "minimum": 5, "maximum": 100 },
+        "initialWanderDelayMaxSeconds": { "type": "number", "minimum": 2, "maximum": 60 },
+        "reactionDisposition": {
+          "type": "string",
+          "enum": ["defensive", "offensive", "random"]
+        },
+        "maximumReactionTimeSeconds": { "type": "number", "minimum": 0.10, "maximum": 1.50 },
+        "useComms": { "type": "boolean" },
+        "counterSuppression": { "type": "boolean" }
+      }
+    },
+    "infiltration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "displayName", "mapPositionX", "mapPositionY", "maxPlayers"],
+      "properties": {
+        "id": { "$ref": "#/$defs/localId" },
+        "displayName": { "$ref": "#/$defs/displayText" },
+        "mapPositionX": { "type": "number", "minimum": 0, "maximum": 1 },
+        "mapPositionY": { "type": "number", "minimum": 0, "maximum": 1 },
+        "maxPlayers": { "type": "integer", "minimum": 1, "maximum": 64 }
+      }
+    },
+    "file": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "bytes", "sha256"],
+      "properties": {
+        "path": { "$ref": "#/$defs/relativePath" },
+        "bytes": { "type": "integer", "minimum": 0, "maximum": 2147483648 },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    }
+  }
+}

@@ -1,0 +1,631 @@
+{
+  "schema": "vektor-killhouse/native-asset-allowlist@4",
+  "projectId": "community.vektor-modular-killhouse",
+  "policy": {
+    "installedGameAssetsOnly": true,
+    "externalAssetsAllowed": false,
+    "generatedArtAllowed": false,
+    "unityBuiltinPrimitivesAllowed": false,
+    "customFurnitureAllowed": false,
+    "approvalRequirement": "A candidate becomes approved only after mesh, material, texture, collider, LOD, source-record, and bundle closure validation."
+  },
+  "exactFurnitureTransport": {
+    "sourceScene": "Assets/Scenes/Suburb Day.unity",
+    "sceneCollection": {
+      "file": "level4",
+      "bytes": 34512572,
+      "sha256": "3b6d1546e8196aeb9b2230818b4787c4cd5f53aab2d6b49bd32452e0b9626e27"
+    },
+    "meshCollection": {
+      "file": "sharedassets4.assets",
+      "bytes": 472950388,
+      "sha256": "6747ed94cb0c909f7291f224657b1c80044080896cdc1c19117f1bcc3f4ac00f"
+    },
+    "additionalFurnitureCollections": [
+      {
+        "role": "Couch_2seat mesh",
+        "file": "sharedassets3.assets",
+        "bytes": 169250016,
+        "sha256": "92f8ca1fa55ccb128288b9e1914462bad0dbe30943f991f4c6991d7df7e0e416"
+      },
+      {
+        "role": "Couch_Fabric material and texture closure",
+        "file": "sharedassets2.assets",
+        "bytes": 88159752,
+        "sha256": "6c9d2217f10e3662f92d63d721306ab1e723edd8bbc74df429a9048ccb1a5b72"
+      },
+      {
+        "role": "Couch_Fabric installed shader identity",
+        "file": "globalgamemanagers.assets",
+        "bytes": 255090072,
+        "sha256": "6cdf42df90ac784f3268f590ec80a0d98d3400751330e558bbb05c08112372a9"
+      }
+    ],
+    "importContract": {
+      "directResidentialVisualMeshes": "AssetRipper GLB: undo X reflection, reverse triangle winding, preserve authored POSITION/NORMAL/TANGENT/TEXCOORD_0..7/COLOR_0 when present",
+      "targetedCollisionAndChildMeshes": "UnityPy exact-channel GLB: exporter reflects Z and reverses winding; default importer inversely reflects Z and reverses winding",
+      "requiredRootChannels": ["POSITION", "NORMAL", "TANGENT", "TEXCOORD_0", "TEXCOORD_1", "COLOR_0"],
+      "sourceExceptions": {
+        "Book_set_bookshelf_A": "no COLOR_0; excluded flattened child mesh",
+        "T_bathtub": "requires TEXCOORD_2; excluded incomplete root"
+      },
+      "orderedRendererMaterialSlotsRequired": true,
+      "materialClosure": "exact resident shader family, texture identity/transform, scalar/vector values, keywords, disabled passes, tags, instancing, double-sided GI, lightmap flags, and render queue"
+    },
+    "wallBackedRootContracts": [
+      {
+        "family": "Bed_queen",
+        "installedRootProvenance": "level4_GO360_MF20235_MR15441_sharedassets4_Mesh1141_MR_SHA256_ae0fb43c7902b028d279f8b4fd91d9cb0ab9603055f1093188ac6cf702dce51a",
+        "orderedMaterials": ["Bed"],
+        "localInteriorAxis": [0.0, 0.0, 1.0],
+        "localWallAxis": [0.0, 0.0, -1.0],
+        "rootCollider": "MeshCollider:Bed_COL@sharedassets4:1002;enabled=true;isTrigger=false;convex=false;cookingOptions=30"
+      },
+      {
+        "family": "Bookshelf",
+        "installedRootProvenance": "level4_GO2136_MF21517_MR16725_sharedassets4_Mesh721_MR_SHA256_6bb929cf8371caaed03e9a1662c45cd0f65ca416b045418fee9acf1aa07e226c",
+        "orderedMaterials": ["Fireplace"],
+        "localInteriorAxis": [0.0, 0.0, 1.0],
+        "localWallAxis": [0.0, 0.0, -1.0],
+        "rootCollider": "MeshCollider:BookShelf_COL@sharedassets4:1069;enabled=true;isTrigger=false;convex=false;cookingOptions=30"
+      },
+      {
+        "family": "Kitcabinet_full_fridge",
+        "installedRootProvenance": "level4_GO2480_MF21764_MR16972_sharedassets4_Mesh1094_MR_SHA256_efadbb90c344d9c9e6caa3fbebbb0fe84c2de26780eed97ade67bde4aabdbf46",
+        "orderedMaterials": ["Kitchen_Cabinet_Wood"],
+        "localInteriorAxis": [0.0, 0.0, 1.0],
+        "localWallAxis": [0.0, 0.0, -1.0],
+        "rootCollider": "BoxCollider[3]:center(.4,1.1859446,.3384462)/size(.8,2.3829341,.6791087)|center(1.48,1.1859446,.3384462)/size(.1,2.3829341,.6791087)|center(.7495269,2.1400001,.3384462)/size(1.6002039,.47,.6791087);enabled=true;isTrigger=false"
+      },
+      {
+        "family": "Kitcabinet_low_1x_A",
+        "installedRootProvenance": "level4_GO1365_MF20950_MR16158_sharedassets4_Mesh1129_MR_SHA256_b0fa7469554a42d5da1ddcae9de8bb08183ae28e9ea4fb5445a8b2bbde7b8e2a",
+        "orderedMaterials": ["Kitchen_Cabinet_Wood", "Kitchen_Cabinet_Marble"],
+        "localInteriorAxis": [0.0, 0.0, 1.0],
+        "localWallAxis": [0.0, 0.0, -1.0],
+        "rootCollider": "BoxCollider[1]:center(.50000006,.45941916,.33795837)/size(1.00000036,.92988235,.67591673);enabled=true;isTrigger=false"
+      },
+      {
+        "family": "Sidetable_A",
+        "installedRootProvenance": "level4_GO680_MF20466_MR15674_sharedassets4_Mesh1179_MR_SHA256_91c01d42fba3b158a452794ca9251f19c8bca785cc17daf3120d587471561b55",
+        "orderedMaterials": ["Bedroom_Closets"],
+        "localInteriorAxis": [0.0, 0.0, 1.0],
+        "localWallAxis": [0.0, 0.0, -1.0],
+        "rootCollider": "MeshCollider:SideTable_A_COL@sharedassets4:1014;enabled=true;isTrigger=false;convex=true;cookingOptions=30"
+      },
+      {
+        "family": "T_sink",
+        "installedRootProvenance": "level4_GO785_MF20544_MR15751_sharedassets4_Mesh890_MR_SHA256_8175fa8e22445eb202c17c40051ed7c91404653e4732804644cdbea973fe8fe7",
+        "orderedMaterials": ["Bedroom_Closets", "Toilet_House"],
+        "localInteriorAxis": [0.0, 0.0, 1.0],
+        "localWallAxis": [0.0, 0.0, -1.0],
+        "rootCollider": "MeshCollider:T_Sink_COL@sharedassets4:1013;enabled=true;isTrigger=false;convex=false;cookingOptions=30"
+      },
+      {
+        "family": "T_toilet",
+        "installedRootProvenance": "level4_GO1702_MF21188_MR16396_sharedassets4_Mesh1052_MR_SHA256_d04bc81fc4fd15a7b8222df3eefbcf3f5709e55142026fb6f6031d6584f72609",
+        "orderedMaterials": ["Toilet_House"],
+        "localInteriorAxis": [0.0, 0.0, 1.0],
+        "localWallAxis": [0.0, 0.0, -1.0],
+        "rootCollider": "BoxCollider[2]:center(-3.7252903e-08,.22,-.006511614)/size(.39312702,.44,.61581385)|center(-3.7252903e-08,.3703465,-.25)/size(.39312702,.742007,.13);enabled=true;isTrigger=false"
+      },
+      {
+        "family": "Workdesk_solo",
+        "installedRootProvenance": "level4_GO2401_MF21703_MR16911_sharedassets4_Mesh673_MR_SHA256_193630ef5ef5663d7dd6f6f7fd60e1aeb90782b7301c0b07076187620fb2b048",
+        "orderedMaterials": ["WorkDesk"],
+        "localInteriorAxis": [0.0, 0.0, 1.0],
+        "localWallAxis": [0.0, 0.0, -1.0],
+        "rootCollider": "MeshCollider:WorkDesk_Solo_COL@sharedassets4:998;enabled=true;isTrigger=false;convex=false;cookingOptions=30"
+      }
+    ],
+    "completeNonWallBackedRootContracts": [
+      {
+        "family": "Kitchen_table_large",
+        "orderedMaterials": ["Kitchen_TableChair"],
+        "rootCollider": "BoxCollider[2]:center(0,.36249366,-2.9802322e-08)/size(.2,.7262458,.2)|center(0,.68,-2.9802322e-08)/size(1,.07,1.75);enabled=true;isTrigger=false"
+      },
+      {
+        "family": "Couch_2seat",
+        "installedRootProvenance": "level4_GO578_T8167_MF20391_MR15599_sharedassets3_Mesh962_sharedassets2_Mat174_layer24_scale1",
+        "transportPrefab": "Assets/VektorKillHouse/Native/Prefabs/PF_NATIVE_Couch_2seat.prefab",
+        "sourceScale": [1.0, 1.0, 1.0],
+        "sourceSceneTransform": {
+          "parentTransformPathId": 9307,
+          "localPosition": [-2.037982940673828, 0.0, 15.489004135131836],
+          "localRotation": [-0.0, 0.7071072459220886, -0.0, 0.7071064114570618]
+        },
+        "transportRootTransformPolicy": "normalize Suburb Day parent/position/rotation to prefab origin/identity; retain exact source scale (1,1,1) and never shrink to fit",
+        "sourceRootComponentOrder": [
+          "level4_T8167_Transform",
+          "level4_MF20391_MeshFilter",
+          "level4_MR15599_MeshRenderer",
+          "level4_BC26094_BoxCollider",
+          "level4_BC26093_BoxCollider",
+          "level4_BC26092_BoxCollider",
+          "level4_BC26091_BoxCollider",
+          "level4_MB30823_Surface_STRIPPED"
+        ],
+        "rootLayer": {
+          "index": 24,
+          "installedName": "Shrapnel_Ignore",
+          "policy": "preserve the direct active level4 residential root layer on the transported prefab"
+        },
+        "mesh": {
+          "collection": "sharedassets3.assets",
+          "pathId": 962,
+          "name": "Couch_2seat",
+          "sourceObjectSha256": "042938d1620d8213c95763acce0ddc20774c2cdfd2dcd9bc523f40668250c202",
+          "vertexCount": 844,
+          "triangleIndexCount": 2286,
+          "subMeshCount": 1,
+          "channels": ["POSITION", "NORMAL", "TANGENT", "TEXCOORD_0", "TEXCOORD_1", "COLOR_0"],
+          "installedUv0Uv1Sha256": "cf3db25ea907e15ef421de6fc1d68c7031d0da923dbf529383087b2da55b6171",
+          "installedCompleteChannelIndexSha256": "c58d40c40d6b9f18be6a883ea69581002c005630df1194206a638896ef483586",
+          "localBoundsCenter": [0.001514941454, 0.475711584091, 0.056183069944],
+          "localBoundsSize": [1.581307172775, 0.949533343315, 0.807984888554]
+        },
+        "orderedMaterials": ["Couch_Fabric"],
+        "renderer": {
+          "pathId": 15599,
+          "portableState": {
+            "enabled": true,
+            "castShadows": 1,
+            "receiveShadows": 1,
+            "dynamicOccludee": 1,
+            "staticShadowCaster": 0,
+            "motionVectors": 1,
+            "lightProbeUsage": 1,
+            "reflectionProbeUsage": 1,
+            "rayTracingMode": 2,
+            "rayTraceProcedural": 0,
+            "rayTracingAccelStructBuildFlagsOverride": 0,
+            "rayTracingAccelStructBuildFlags": 1,
+            "smallMeshCulling": 1,
+            "forceMeshLod": -1,
+            "meshLodSelectionBias": 0.0,
+            "renderingLayerMask": 257,
+            "rendererPriority": 0,
+            "sortingLayerId": 0,
+            "sortingLayer": 0,
+            "sortingOrder": 0,
+            "maskInteraction": 0,
+            "staticBatchInfo": [0, 0]
+          },
+          "retainedProbeAnchorChild": {
+            "gameObjectPathId": 2175,
+            "transformPathId": 9763,
+            "name": "GameObject",
+            "active": true,
+            "layer": 24,
+            "localPosition": [-0.0, 1.3220000267028809, -0.3490000069141388],
+            "localRotation": [0.0, 0.0, 0.0, 1.0],
+            "localScale": [1.0, 1.0, 1.0],
+            "retainedComponents": ["Transform"],
+            "strippedComponents": ["level4_MB34004_PolyFewHost"]
+          },
+          "sourceSceneBakedLightmap": {
+            "lightmapIndex": 9,
+            "lightmapIndexDynamic": 65535,
+            "lightmapTilingOffset": [0.12006637454032898, 0.12028512358665466, 0.6814491748809814, 0.39726248383522034],
+            "lightmapTilingOffsetDynamic": [1.0, 1.0, 0.0, 0.0],
+            "transportPolicy": "exclude because this atlas binding belongs only to the Suburb Day bake; retain the portable renderer/probe state"
+          }
+        },
+        "material": {
+          "collection": "sharedassets2.assets",
+          "pathId": 174,
+          "sourceObjectSha256": "4eccd0bdab0aaad9fa33a1a16fc8d68f6214d03d010d31d30bd21da0a1c4424c",
+          "shader": {
+            "collection": "globalgamemanagers.assets",
+            "pathId": 210,
+            "name": "MilkShaders/Lit-Template",
+            "sourceObjectSha256": "232fcde28e2bf9f8d14c3f471b31f4bf4f215298eb3dda688efda1c3dc25f011"
+          },
+          "renderQueue": 2225,
+          "textures": [
+            {"pathId": 830, "name": "Couch_Fabric_BaseColor", "size": [2048, 2048], "mipCount": 12, "sourceObjectSha256": "caea1be73e267341cd56786218bc896f17ced822ad8a209d815e92e8d1fe7edd"},
+            {"pathId": 856, "name": "Couch_Fabric_Normal", "size": [1024, 1024], "mipCount": 11, "sourceObjectSha256": "3ea46cd27b1df05917f41c5f2577e21b4f56a3106319ff4f2c5759f7f50244a7"},
+            {"pathId": 959, "name": "Couch_Fabric_MaskMap", "size": [512, 512], "mipCount": 10, "sourceObjectSha256": "16fe865a2a9f19ad19ae1f11264f591d48eac98df6875ecc03c157d77f47bff2"}
+          ]
+        },
+        "localFrontAxis": [0.0, 0.0, 1.0],
+        "localBackAxis": [0.0, 0.0, -1.0],
+        "frontEvidence": "the installed rear/backrest collider occupies negative local Z while the seat/body extends toward positive local Z",
+        "metadataMarkers": [
+          "NATIVE_FURNITURE_FRONT_LOCAL_POSITIVE_Z",
+          "NATIVE_FURNITURE_PROVENANCE_level4_GO578_Couch_2seat_Mesh962_Mat174"
+        ],
+        "rootCollider": "BoxCollider[4]:center(.0015151650878,.2312633097172,.0561849772930)/size(1.5813075304031,.4606367945671,.8079850673676)|center(.0015150876716,.4757115840912,-.2326803952456)/size(1.5813075304031,.9495333433151,.2302544414997)|center(.7339684963226,.3626925051212,.0561847798526)/size(.1164012849331,.7234951853752,.8079850673676)|center(-.7227199077606,.3560544550419,.0561851710081)/size(.1328377425671,.7102190852165,.8079850673676);enabled=true;isTrigger=false;material=null;providesContacts=false;includeLayers=0;excludeLayers=0;layerOverridePriority=0",
+        "rendererColliderChildCount": 0,
+        "strippedNonVisualBehaviours": [
+          "level4_MB30823_Surface",
+          "level4_GO2175_T9763_MB34004_PolyFewHost_COMPONENT_ONLY_TRANSFORM_RETAINED_AS_MR15599_PROBE_ANCHOR"
+        ]
+      }
+    ],
+    "retainedActiveChildHierarchy": [
+      {
+        "rootFamily": "Bed_queen",
+        "path": "Pillow_small[0]",
+        "localPosition": [0.307000011, 0.707000017, -0.644999981],
+        "localRotation": [0.251538515, -0.058406256, -0.012960499, 0.965996504],
+        "mesh": "Pillow_small",
+        "orderedMaterials": ["PillowSmall"],
+        "collider": "MeshCollider:PillowSmall_COL@sharedassets4:1009;enabled=true;isTrigger=false;convex=false;cookingOptions=30",
+        "installedProvenance": "level4_GO358_T7948_MF20236_MR15443_MC25210_mesh747_mat96_col1009"
+      },
+      {
+        "rootFamily": "Bed_queen",
+        "path": "Pillow_small[1]",
+        "localPosition": [-0.180000007, 0.707000017, -0.649999976],
+        "localRotation": [0.317480564, 0.097556531, -0.053890042, 0.941692472],
+        "mesh": "Pillow_small",
+        "orderedMaterials": ["PillowSmall"],
+        "collider": "MeshCollider:PillowSmall_COL@sharedassets4:1009;enabled=true;isTrigger=false;convex=false;cookingOptions=30",
+        "installedProvenance": "level4_GO357_T7947_MF20234_MR15444_MC25212_mesh747_mat96_col1009"
+      },
+      {
+        "rootFamily": "Bed_queen",
+        "path": "Pillow_large[0]",
+        "localPosition": [-0.309999943, 0.608999968, -0.897999763],
+        "localRotation": [0.063810684, -0.005018107, -0.022382082, 0.997698367],
+        "mesh": "Pillow_large",
+        "orderedMaterials": ["PillowLarge"],
+        "collider": "MeshCollider:PillowLarge_COL@sharedassets4:1010;enabled=true;isTrigger=false;convex=false;cookingOptions=30",
+        "installedProvenance": "level4_GO356_T7945_MF20232_MR15440_MC25211_mesh769_mat95_col1010"
+      },
+      {
+        "rootFamily": "Bed_queen",
+        "path": "Pillow_large[1]",
+        "localPosition": [0.404000014, 0.621000051, -0.85799998],
+        "localRotation": [0.063628756, 0.006954471, -0.012878145, 0.997866333],
+        "mesh": "Pillow_large",
+        "orderedMaterials": ["PillowLarge"],
+        "collider": "MeshCollider:PillowLarge_COL@sharedassets4:1010;enabled=true;isTrigger=false;convex=false;cookingOptions=30",
+        "installedProvenance": "level4_GO359_T7946_MF20233_MR15442_MC25209_mesh769_mat95_col1010"
+      },
+      {
+        "rootFamily": "Sidetable_A",
+        "path": "Sidetable_A_drawer",
+        "localPosition": [-0.000006561279, 0.549451709, 0.02767208],
+        "localRotation": [0.0, 0.0, 0.0, 1.0],
+        "mesh": "Sidetable_A_drawer",
+        "orderedMaterials": ["Bedroom_Closets"],
+        "collider": "MeshCollider:Drawer_SideTableA_COL@sharedassets4:1022;enabled=false;isTrigger=false;convex=true;cookingOptions=30",
+        "installedProvenance": "level4_GO1737_T9325_MF21215_MR16423_MC25380_mesh1111_mat171_col1022"
+      },
+      {
+        "rootFamily": "T_sink",
+        "path": "T_sink_door_L (1)",
+        "localPosition": [0.466553777, 0.466425627, 0.531496406],
+        "localRotation": [0.0, 0.000000238419, 0.0, 1.0],
+        "mesh": "T_sink_door_L",
+        "orderedMaterials": ["Bedroom_Closets"],
+        "collider": "BoxCollider[1]:center(-.230998382,0,.014692759)/size(.470443398,.684271514,.050654199);enabled=true;isTrigger=false",
+        "installedProvenance": "level4_GO2410_T9997_MF21715_MR16923_BC27393_mesh660_mat171"
+      },
+      {
+        "rootFamily": "T_sink",
+        "path": "T_sink_door_R (1)",
+        "localPosition": [-0.469173878, 0.466425627, 0.531496406],
+        "localRotation": [0.0, 0.000000238419, 0.000000087423, 1.0],
+        "mesh": "T_sink_door_R",
+        "orderedMaterials": ["Bedroom_Closets"],
+        "collider": "BoxCollider[1]:center(.232103765,.000000461936,.014692919)/size(.470443428,.684271574,.050654192);enabled=true;isTrigger=false",
+        "installedProvenance": "level4_GO2074_T9662_MF21468_MR16676_BC27149_mesh1112_mat171"
+      },
+      {
+        "rootFamily": "T_toilet",
+        "path": "T_toilet_lid (1)",
+        "localPosition": [-0.000156097, 0.409894168, -0.105191417],
+        "localRotation": [-0.725540996, 0.0, 0.000000029802, 0.688179016],
+        "mesh": "T_toilet_lid",
+        "orderedMaterials": ["Toilet_House"],
+        "collider": "BoxCollider[1]:center(.001000941,.017943554,.184148327)/size(.355356365,.022520866,.425430149);enabled=true;isTrigger=false",
+        "installedProvenance": "level4_GO5966_T10254_MF22678_MR17289_BC29156_mesh753_mat111"
+      },
+      {
+        "rootFamily": "T_toilet",
+        "path": "T_toilet_lid (1)/T_toilet_seat (1)",
+        "localPosition": [0.0, 0.0, 0.0],
+        "localRotation": [0.005043178, -0.0000000195, -0.000000063864, 0.999987304],
+        "mesh": "T_toilet_seat",
+        "orderedMaterials": ["Toilet_House"],
+        "collider": "BoxCollider[1]:center(0,-.015444206,.183325782)/size(.360641479,.052449051,.430035204);enabled=true;isTrigger=false",
+        "installedProvenance": "level4_GO2824_T13183_MF24205_MR19230_BC28939_mesh1076_mat111"
+      },
+      {
+        "rootFamily": "Workdesk_solo",
+        "path": "Workdesk_door_L",
+        "localPosition": [-0.834760129, 0.409088165, 0.457503468],
+        "localRotation": [0.0, 0.0, 0.0, 1.0],
+        "mesh": "Workdesk_door_L",
+        "orderedMaterials": ["WorkDesk"],
+        "collider": "BoxCollider[1]:center(.205938876,0,.000000004657)/size(.410812676,.550970018,.04496894);enabled=true;isTrigger=false",
+        "installedProvenance": "level4_GO2399_T9988_MF21705_MR16912_BC27382_mesh680_mat188"
+      },
+      {
+        "rootFamily": "Workdesk_solo",
+        "path": "Workdesk_door_R",
+        "localPosition": [0.831830859, 0.409088165, 0.457503468],
+        "localRotation": [0.0, 0.0, 0.0, 1.0],
+        "mesh": "Workdesk_door_R",
+        "orderedMaterials": ["WorkDesk"],
+        "collider": "BoxCollider[1]:center(-.204264224,0,.000000004657)/size(.410812676,.550970018,.04496894);enabled=true;isTrigger=false",
+        "installedProvenance": "level4_GO2400_T9986_MF21704_MR16913_BC27383_mesh1134_mat188"
+      }
+    ],
+    "excludedFlattenedStandaloneFamilies": [
+      "Book_set_bookshelf_A",
+      "D_TV_standing",
+      "Sofa_A",
+      "Sofa_B",
+      "T_bathtub"
+    ],
+    "runtimeAdditionalForbiddenMeshNames": ["Book_set"],
+    "hierarchyPolicy": "retain only exact active visual/collider children; strip untransported MonoBehaviours; fail closed on missing, extra, reordered, transformed, or mismatched children",
+    "orientationPolicy": "wall-backed root local +Z faces room interior, local -Z faces owned wall; no per-instance yaw guesses"
+  },
+  "sources": [
+    {
+      "scenePath": "Assets/Scenes/KillhousePVP Day.unity",
+      "buildIndex": 8,
+      "levelFile": "level8",
+      "sharedAssetsFile": "sharedassets8.assets",
+      "allowedRoles": [
+        "structural-wall",
+        "doorway",
+        "interior-window",
+        "floor",
+        "ceiling",
+        "training-light",
+        "target",
+        "training-prop"
+      ],
+      "candidateNames": [
+        "Wall2MeterDoor",
+        "Wall2MeterDoorCollision",
+        "Wall2MeterWindow",
+        "Wall2MeterWindowCollision",
+        "Wall4MeterWindow",
+        "Wall4MeterWindowCollision",
+        "PrpSetA1",
+        "TgtTargetsA1",
+        "TgtTargetStandsA1",
+        "TrTiresA1"
+      ],
+      "status": "candidate-name-proven"
+    },
+    {
+      "scenePath": "Assets/Scenes/Suburb Day.unity",
+      "buildIndex": 4,
+      "levelFile": "level4",
+      "sharedAssetsFile": "sharedassets4.assets",
+      "allowedRoles": [
+        "living-room",
+        "bedroom",
+        "kitchen",
+        "dining-room",
+        "bathroom",
+        "study",
+        "storage",
+        "residential-light",
+        "residential-door",
+        "residential-window"
+      ],
+      "candidateNames": [
+        "Bed_queen",
+        "Bed_small",
+        "Couch_1seat",
+        "Couch_2seat",
+        "Couch_3seat",
+        "Sofa_A",
+        "Sofa_B",
+        "Sofa_House",
+        "Sidetable_A",
+        "Sidetable_B",
+        "Sidetable_TV",
+        "Bookshelf",
+        "Book_set_bookshelf_A",
+        "Book_set_bookshelf_B",
+        "Kitcabinet_full_cabinet",
+        "Kitcabinet_full_fridge",
+        "Kitcabinet_low_1x_A",
+        "Kitcabinet_low_1x_B",
+        "Kitcabinet_low_1x_dishwasher",
+        "Kitcabinet_low_1x_stove",
+        "Kitcabinet_low_corner",
+        "Kitcabinet_low_counter_solo",
+        "Kitcabinet_upper_1x_A",
+        "Kitcabinet_upper_1x_B",
+        "Kitcabinet_upper_1x_cookerhood",
+        "Kitchen_chair_wooden",
+        "Kitchen_table_large",
+        "Kitchen_table_rectangle",
+        "Fridge",
+        "TableSet",
+        "Chair01",
+        "Carpet_hallway",
+        "Carpet_living_room",
+        "Lamp_bedroom",
+        "Lamp_ceiling_circle",
+        "Lamp_chandelier",
+        "Lamp_floor",
+        "Lamp_kitchen_A",
+        "Lamp_kitchen_B",
+        "Lamp_table_A",
+        "Lamp_table_B",
+        "T_bathtub",
+        "T_sink",
+        "T_toilet",
+        "To_showercurtain",
+        "Wall_Interior_1x_door",
+        "Wall_Interior_2x_door_double",
+        "Wall_Interior_3x_door",
+        "Window_openable",
+        "Windowglass_singlewindow",
+        "Door Breachable",
+        "Door Interior Paneled"
+      ],
+      "status": "candidate-name-proven"
+    },
+    {
+      "scenePath": "Assets/Scenes/PVP_Office.unity",
+      "buildIndex": null,
+      "levelFile": "unresolved-in-partial-roundtrip-export",
+      "sharedAssetsFile": "unresolved-in-partial-roundtrip-export",
+      "allowedRoles": [
+        "structural-pillar"
+      ],
+      "candidateNames": [
+        "Pillar Square"
+      ],
+      "observedMeshGuid": "6c2caa8384e30df4387ab8488fd9fd3b",
+      "observedDimensionsMeters": [0.464556, 2.5, 0.464556],
+      "observedSceneTransform": {
+        "rotationEulerDegrees": [-90.00001, 0.0, 0.0],
+        "uniformScale": 100.0
+      },
+      "materialClosure": "unresolved-deadbeef-reference-in-partial-export",
+      "colliderClosure": "no-attached-collider-on-observed-scene-object; combined-scene-collision-unresolved",
+      "placementAllowed": false,
+      "status": "candidate-mesh-proven-closure-pending"
+    },
+    {
+      "scenePath": "Assets/Scenes/PVP Woods Warehouse.unity",
+      "buildIndex": 11,
+      "levelFile": "level11",
+      "sharedAssetsFile": "sharedassets11.assets",
+      "sourceCollectionBytes": 21692476,
+      "sourceCollectionSha256": "57ce73ec349a70512a1ccba69a4253188c5825c48e8596019f29200b7f95c547",
+      "sceneCollectionBytes": 6850504,
+      "sceneCollectionSha256": "30898cdf961044ab5859fd8d506b45651756c97f4907fcfe3d836adc5299041c",
+      "sceneObjectProvenance": {
+        "activeAppearanceProof": {
+          "gameObject": { "pathId": 104, "name": "Cube", "active": true },
+          "transformPathId": 9759,
+          "meshFilter": {
+            "pathId": 28059,
+            "mesh": { "fileId": 5, "pathId": 10202, "identity": "Unity built-in Cube" },
+            "authorization": "appearance proof only; built-in geometry is forbidden in the mod"
+          },
+          "meshRenderer": {
+            "pathId": 19268,
+            "material": { "fileId": 3, "pathId": 26, "name": "Floor" }
+          },
+          "boxColliderPathId": 37217
+        },
+        "inactiveGeometryDonor": {
+          "gameObject": { "pathId": 9601, "name": "Floor", "active": false },
+          "transformPathId": 15039,
+          "meshFilter": {
+            "pathId": 28534,
+            "mesh": { "fileId": 3, "pathId": 152, "name": "Floor" }
+          },
+          "meshRenderer": {
+            "pathId": 27730,
+            "material": { "fileId": 3, "pathId": 26, "name": "Floor" }
+          },
+          "meshCollider": {
+            "pathId": 37204,
+            "mesh": { "fileId": 3, "pathId": 152, "name": "Floor" },
+            "enabled": true,
+            "isTrigger": false,
+            "convex": false
+          }
+        }
+      },
+      "warehouseGroundApronContract": {
+        "authorization": "appearance from active GO104 Floor material only; geometry and collider from inactive non-primitive GO9601 only",
+        "meshAssetPath": "Assets/VektorKillHouse/Native/WarehousePvp/Meshes/Generated/Floor.asset",
+        "meshName": "Floor",
+        "meshPathId": 152,
+        "materialName": "Floor",
+        "materialPathId": 26,
+        "vertexCount": 4,
+        "triangleIndexCount": 6,
+        "subMeshCount": 1,
+        "topology": "triangles",
+        "normals": "all-up",
+        "vertexChannels": ["POSITION", "NORMAL", "TANGENT", "TEXCOORD_0", "TEXCOORD_1"],
+        "sourceLocalBoundsMeters": [5.4252541065216064, 0.0, 4.129903554916382],
+        "meshColliderMustShareVisualMesh": true,
+        "meshColliderEnabled": true,
+        "meshColliderIsTrigger": false,
+        "meshColliderConvex": false,
+        "unityBuiltInPrimitiveGeometryForbidden": true
+      },
+      "allowedRoles": [
+        "complete-warehouse-shell",
+        "warehouse-perimeter-wall",
+        "warehouse-roof",
+        "warehouse-overhead-support",
+        "warehouse-structural-support",
+        "warehouse-ground-apron"
+      ],
+      "candidateNames": [
+        "Base Warehouse",
+        "OverHead Support",
+        "Roof",
+        "Support 2",
+        "Floor",
+        "RM Steel smooth",
+        "Albedo_4K__wckscdz",
+        "Normal_4K__wckscdz",
+        "Masks_4K__wckscdz",
+        "RM common grunge 07 G",
+        "RM steel oxidized distant D",
+        "RM steel oxidized G",
+        "RM common spots blue red D"
+      ],
+      "pathIds": {
+        "baseWarehouseMesh": 148,
+        "overHeadSupportMesh": 167,
+        "roofMesh": 168,
+        "support2Mesh": 170,
+        "warehouseFloorMesh": 152,
+        "warehouseGroundActiveAppearanceGameObject": 104,
+        "warehouseGroundInactiveGeometryGameObject": 9601,
+        "material": 19,
+        "warehouseFloorMaterial": 26,
+        "baseTexture": 83,
+        "maskTexture": 124,
+        "warehouseFloorBaseTexture": 53,
+        "warehouseFloorNormalTexture": 78,
+        "warehouseFloorMaskTexture": 138
+      },
+      "placementAllowed": true,
+      "status": "exact-installed-scene-hierarchy-mesh-material-texture-and-collider-closure-proven"
+    },
+    {
+      "scenePath": "sharedassets13.assets",
+      "buildIndex": null,
+      "levelFile": null,
+      "sharedAssetsFile": "sharedassets13.assets",
+      "sourceCollectionBytes": 163014020,
+      "sourceCollectionSha256": "8d01dbe25f3e104070c57ee08ace5da327da1197f64fff7fec9a31673aef1d13",
+      "allowedRoles": [
+        "warehouse-wall-finish",
+        "warehouse-roof-finish",
+        "industrial-fluorescent"
+      ],
+      "candidateNames": [
+        "Aset_industrial__M_vb1lafx_LOD0",
+        "Corrugated Metal Sheet_vb1lafx",
+        "Albedo_4K__vb1lafx",
+        "Normal_4K_LOD0_vb1lafx",
+        "Displacement_4K__vb1lafx",
+        "Lamp_fluorescent_B"
+      ],
+      "pathIds": {
+        "mesh": 861,
+        "material": 8,
+        "baseTexture": 300,
+        "normalTexture": 262,
+        "displacementTexture": 260
+      },
+      "placementAllowed": true,
+      "status": "exact-installed-collection-and-closure-proven"
+    }
+  ]
+}

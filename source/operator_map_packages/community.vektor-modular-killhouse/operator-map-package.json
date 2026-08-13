@@ -1,0 +1,121 @@
+{
+  "$schema": "https://operator-mod-api.dev/schemas/operator-map-package-v2.json",
+  "schemaVersion": 2,
+  "packageId": "community.vektor-modular-killhouse",
+  "displayName": "LOT 12: FALSE WALL",
+  "version": "0.1.18",
+  "maps": [
+    {
+      "mapId": "community.vektor-modular-killhouse.modular-killhouse",
+      "displayName": "LOT 12: FALSE WALL",
+      "sceneBundle": "content/operator_vektor_killhouse_scenes",
+      "dependencyBundles": [
+        "content/operator_vektor_killhouse"
+      ],
+      "scenePath": "Assets/VektorKillHouse/Scenes/KH01_CircuitHouse.unity",
+      "sceneVariants": [
+        {"id":"kh01-circuit-house","scenePath":"Assets/VektorKillHouse/Scenes/KH01_CircuitHouse.unity"},
+        {"id":"kh02-offset-figure-eight","scenePath":"Assets/VektorKillHouse/Scenes/KH02_OffsetFigureEight.unity"},
+        {"id":"kh03-serpentine-apartment","scenePath":"Assets/VektorKillHouse/Scenes/KH03_SerpentineApartment.unity"},
+        {"id":"kh04-courtyard-ring","scenePath":"Assets/VektorKillHouse/Scenes/KH04_CourtyardRing.unity"},
+        {"id":"kh05-split-spine","scenePath":"Assets/VektorKillHouse/Scenes/KH05_SplitSpine.unity"},
+        {"id":"kh06-compressed-grid","scenePath":"Assets/VektorKillHouse/Scenes/KH06_CompressedGrid.unity"},
+        {"id":"kh07-broken-diamond","scenePath":"Assets/VektorKillHouse/Scenes/KH07_BrokenDiamond.unity"},
+        {"id":"kh08-double-back","scenePath":"Assets/VektorKillHouse/Scenes/KH08_DoubleBack.unity"},
+        {"id":"kh09-pinwheel","scenePath":"Assets/VektorKillHouse/Scenes/KH09_Pinwheel.unity"},
+        {"id":"kh10-wide-labyrinth","scenePath":"Assets/VektorKillHouse/Scenes/KH10_WideLabyrinth.unity"}
+      ],
+      "runtimeCompanion": {
+        "pluginGuid": "operator.vektor-killhouse",
+        "pluginVersion": "0.1.16",
+        "sha256": "a3240fd73a269572a8421b3e8428d899ca4d8b91642691a4161bb7bce33cd427",
+        "readyMarkerName": "MODDED_OPERATIONS_RUNTIME_CONTRACT_READY",
+        "failureMarkerName": "MODDED_OPERATIONS_RUNTIME_CONTRACT_FAILED"
+      },
+      "previewImage": "media/vektor_modular_killhouse_preview.png",
+      "operations": [
+        {
+          "operationId": "community.vektor-modular-killhouse.pve",
+          "displayName": "OPERATION FALSE WALL",
+          "displayOrder": 0,
+          "mode": "pve",
+          "areaOfOperation": "NORTH CAROLINA, REDACTED \"LOT 12\"",
+          "sitrep": "Armed contacts are holding a modular interior built inside the Lot 12 warehouse. The internal configuration is unconfirmed. Infiltrate through the service access point, clear every room, and return to the entry safe room once extraction is authorized.",
+          "minPlayers": 1,
+          "maxPlayers": 4,
+          "minEnemies": 10,
+          "maxEnemies": 15,
+          "pveAiProfile": {
+            "id": "killhouse-indoor-assault-v3",
+            "detectionRangeMeters": 36.0,
+            "fieldOfViewDegrees": 125.0,
+            "maximumEffectiveRangeMeters": 40.0,
+            "wanderDistanceMeters": 12,
+            "initialWanderDelayMaxSeconds": 6.0,
+            "reactionDisposition": "offensive",
+            "maximumReactionTimeSeconds": 0.25,
+            "useComms": true,
+            "counterSuppression": true
+          },
+          "spawnSet": "killhouse-pve",
+          "infiltrations": [
+            {
+              "id": "safe-room",
+              "displayName": "ALPHA 2",
+              "mapPositionX": 0.5,
+              "mapPositionY": 0.92,
+              "maxPlayers": 4
+            }
+          ],
+          "timeCodes": [
+            "1100",
+            "0200"
+          ],
+          "defaultTimeCode": "1100"
+        },
+        {
+          "operationId": "community.vektor-modular-killhouse.pvp",
+          "displayName": "OPERATION FALSE WALL: RED CELL",
+          "displayOrder": 1,
+          "mode": "pvp",
+          "areaOfOperation": "NORTH CAROLINA, REDACTED \"LOT 12\"",
+          "sitrep": "Two teams are entering the Lot 12 modular interior from opposing staging points. The internal configuration is unconfirmed. Establish control of the structure, deny the opposing element freedom of movement, and hold the initiative through each round.",
+          "minPlayers": 2,
+          "maxPlayers": 12,
+          "spawnSet": "killhouse-pvp",
+          "infiltrations": [
+            {
+              "id": "opposing-entries",
+              "displayName": "OPPOSING ENTRIES",
+              "mapPositionX": 0.5,
+              "mapPositionY": 0.5,
+              "maxPlayers": 12
+            }
+          ],
+          "timeCodes": [
+            "1100",
+            "0200"
+          ],
+          "defaultTimeCode": "1100"
+        }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "path": "content/operator_vektor_killhouse",
+      "bytes": 77324865,
+      "sha256": "06b3419054bfbaffc6ad9adae1cbc0b6d2dca36fee1d516538fe1098ee753ec8"
+    },
+    {
+      "path": "content/operator_vektor_killhouse_scenes",
+      "bytes": 739607,
+      "sha256": "c864e34117352efcaacf0bd29189701c84c9380d41b1d2ff4957567e4997a375"
+    },
+    {
+      "path": "media/vektor_modular_killhouse_preview.png",
+      "bytes": 993967,
+      "sha256": "27439e4f347dad46ffb685d9c515b5b5f07284161329d8fc35770069634e0cf1"
+    }
+  ]
+}

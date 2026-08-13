@@ -1,0 +1,58 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <AssemblyName>OperatorKillHouse</AssemblyName>
+    <RootNamespace>OperatorKillHouse</RootNamespace>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <Deterministic>true</Deterministic>
+    <DebugType Condition="'$(Configuration)' == 'Release'">none</DebugType>
+    <DebugSymbols Condition="'$(Configuration)' == 'Release'">false</DebugSymbols>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="OperatorKillHousePlugin.cs" />
+    <EmbeddedResource Include="..\unity_project\Assets\VektorKillHouse\Native\Residential\SourceMaterials\*.json">
+      <LogicalName>OperatorKillHouse.NativeMaterials.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\unity_project\Assets\VektorKillHouse\Native\ResidentialComplete\SourceMaterials\*.json">
+      <LogicalName>OperatorKillHouse.NativeMaterials.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\unity_project\Assets\VektorKillHouse\Native\ResidentialHierarchy\SourceMaterials\*.json">
+      <LogicalName>OperatorKillHouse.NativeMaterials.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\unity_project\Assets\VektorKillHouse\Native\WarehousePvp\SourceMaterials\*.json">
+      <LogicalName>OperatorKillHouse.NativeMaterials.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <Reference Include="BepInEx.Core"><HintPath>$(OperatorGameDir)\BepInEx\core\BepInEx.Core.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="BepInEx.Unity.Common"><HintPath>$(OperatorGameDir)\BepInEx\core\BepInEx.Unity.Common.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="BepInEx.Unity.IL2CPP"><HintPath>$(OperatorGameDir)\BepInEx\core\BepInEx.Unity.IL2CPP.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Il2CppInterop.Runtime"><HintPath>$(OperatorGameDir)\BepInEx\core\Il2CppInterop.Runtime.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Il2Cppmscorlib"><HintPath>$(OperatorGameDir)\BepInEx\interop\Il2Cppmscorlib.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Il2CppSystem"><HintPath>$(OperatorGameDir)\BepInEx\interop\Il2CppSystem.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Il2CppSystem.Core"><HintPath>$(OperatorGameDir)\BepInEx\interop\Il2CppSystem.Core.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="AstarPathfindingProject"><HintPath>$(OperatorGameDir)\BepInEx\interop\AstarPathfindingProject.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Assembly-CSharp"><HintPath>$(OperatorGameDir)\BepInEx\interop\Assembly-CSharp.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Assembly-CSharp-firstpass"><HintPath>$(OperatorGameDir)\BepInEx\interop\Assembly-CSharp-firstpass.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Mirror"><HintPath>$(OperatorGameDir)\BepInEx\interop\Mirror.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="PackageTools"><HintPath>$(OperatorGameDir)\BepInEx\interop\PackageTools.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Drawing"><HintPath>$(OperatorGameDir)\BepInEx\interop\Drawing.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Unity.RenderPipelines.HighDefinition.Runtime"><HintPath>$(OperatorGameDir)\BepInEx\interop\Unity.RenderPipelines.HighDefinition.Runtime.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Unity.RenderPipelines.Core.Runtime"><HintPath>$(OperatorGameDir)\BepInEx\interop\Unity.RenderPipelines.Core.Runtime.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.CoreModule"><HintPath>$(OperatorGameDir)\BepInEx\interop\UnityEngine.CoreModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.AudioModule"><HintPath>$(OperatorGameDir)\BepInEx\interop\UnityEngine.AudioModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.AssetBundleModule"><HintPath>$(OperatorGameDir)\BepInEx\interop\UnityEngine.AssetBundleModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.PhysicsModule"><HintPath>$(OperatorGameDir)\BepInEx\interop\UnityEngine.PhysicsModule.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+  <Target Name="RequireAuthorizedNativeMaterialProfiles" BeforeTargets="CoreCompile"
+          Condition="'$(AllowMissingNativeMaterialProfiles)' != 'true'">
+    <ItemGroup>
+      <_NativeMaterialProfiles Include="..\unity_project\Assets\VektorKillHouse\Native\**\SourceMaterials\*.json" />
+    </ItemGroup>
+    <Error Condition="'@(_NativeMaterialProfiles)' == ''"
+           Text="Authorized OPERATOR native material profile inputs are missing. Read the Native asset placeholder and populate them from your own installed game, or set AllowMissingNativeMaterialProfiles=true for a compile-only source check." />
+  </Target>
+</Project>
