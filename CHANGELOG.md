@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.1.22 / companion 0.1.18 test candidate — 2026-08-29
+
+- Preloaded all 47 wooden-door clips from the shared dependency bundle, using
+  decompressed-on-load audio with background loading disabled. This removes
+  first-use audio decoding from the first doors opened during a mission.
+- Rebuilt and statically validated all ten randomized layouts and both asset
+  bundles.
+- Expanded and retained the private LOT 12 PVE selector at 10-60 enemies, with
+  72 authored candidates per scene and a companion-certified capacity of 60.
+  PVP, Tier 1, vanilla missions, and other maps remain untouched.
+- Required the hash-pinned Modded Operations `0.3.30` hotfix, which releases a
+  completed packaged mission's transition ownership after returning to the
+  Operation Room. The stale owner could block a later LOT 12, Ukrainian Forest,
+  or Whiteout/Winter Confirm action.
+- Kept the release fail-closed for online support until separate host/client PVE
+  and PVP runs prove the corrected sequence.
+
 ## 0.1.18 — 2026-08-12
 
 - Added a second, distinct operation: `OPERATION FALSE WALL: RED CELL`

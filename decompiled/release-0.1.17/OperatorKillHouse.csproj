@@ -1,0 +1,78 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>OperatorKillHouse</AssemblyName>
+    <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
+    <TargetFramework>net6.0</TargetFramework>
+  </PropertyGroup>
+  <PropertyGroup>
+    <LangVersion>15.0</LangVersion>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <CheckForOverflowUnderflow>False</CheckForOverflowUnderflow>
+  </PropertyGroup>
+  <PropertyGroup>
+    <RootNamespace />
+  </PropertyGroup>
+  <ItemGroup>
+    <None Remove="OperatorKillHouse.NativeMaterials.Bed.json" />
+    <None Remove="OperatorKillHouse.NativeMaterials.Bedroom_Closets.json" />
+    <None Remove="OperatorKillHouse.NativeMaterials.Books.json" />
+    <None Remove="OperatorKillHouse.NativeMaterials.Carpet_B.json" />
+    <None Remove="OperatorKillHouse.NativeMaterials.Devices_On.json" />
+    <None Remove="OperatorKillHouse.NativeMaterials.Door_Breached.json" />
+    <None Remove="OperatorKillHouse.NativeMaterials.Door_White.json" />
+    <None Remove="OperatorKillHouse.NativeMaterials.Fireplace.json" />
+    <None Remove="OperatorKillHouse.NativeMaterials.In_Floor_Basement.json" />
+    <None Remove="OperatorKillHouse.NativeMaterials.In_Floor_Carpet.json" />
+    <None Remove="OperatorKillHouse.NativeMaterials.Kitchen_Cabinet_Marble.json" />
+    <None Remove="OperatorKillHouse.NativeMaterials.Kitchen_Cabinet_Wood.json" />
+    <None Remove="OperatorKillHouse.NativeMaterials.Kitchen_TableChair.json" />
+    <None Remove="OperatorKillHouse.NativeMaterials.Lamps_House_Off.json" />
+    <None Remove="OperatorKillHouse.NativeMaterials.Sofa_House.json" />
+    <None Remove="OperatorKillHouse.NativeMaterials.Toilet_House.json" />
+    <None Remove="OperatorKillHouse.NativeMaterials.WorkDesk.json" />
+    <None Remove="OperatorKillHouse.NativeMaterials.Couch_Fabric.json" />
+    <None Remove="OperatorKillHouse.NativeMaterials.PillowLarge.json" />
+    <None Remove="OperatorKillHouse.NativeMaterials.PillowSmall.json" />
+    <None Remove="OperatorKillHouse.NativeMaterials.Floor.json" />
+    <None Remove="OperatorKillHouse.NativeMaterials.RM-Steel-smooth.json" />
+    <EmbeddedResource Include="OperatorKillHouse.NativeMaterials.Bed.json" LogicalName="OperatorKillHouse.NativeMaterials.Bed.json" />
+    <EmbeddedResource Include="OperatorKillHouse.NativeMaterials.Bedroom_Closets.json" LogicalName="OperatorKillHouse.NativeMaterials.Bedroom_Closets.json" />
+    <EmbeddedResource Include="OperatorKillHouse.NativeMaterials.Books.json" LogicalName="OperatorKillHouse.NativeMaterials.Books.json" />
+    <EmbeddedResource Include="OperatorKillHouse.NativeMaterials.Carpet_B.json" LogicalName="OperatorKillHouse.NativeMaterials.Carpet_B.json" />
+    <EmbeddedResource Include="OperatorKillHouse.NativeMaterials.Devices_On.json" LogicalName="OperatorKillHouse.NativeMaterials.Devices_On.json" />
+    <EmbeddedResource Include="OperatorKillHouse.NativeMaterials.Door_Breached.json" LogicalName="OperatorKillHouse.NativeMaterials.Door_Breached.json" />
+    <EmbeddedResource Include="OperatorKillHouse.NativeMaterials.Door_White.json" LogicalName="OperatorKillHouse.NativeMaterials.Door_White.json" />
+    <EmbeddedResource Include="OperatorKillHouse.NativeMaterials.Fireplace.json" LogicalName="OperatorKillHouse.NativeMaterials.Fireplace.json" />
+    <EmbeddedResource Include="OperatorKillHouse.NativeMaterials.In_Floor_Basement.json" LogicalName="OperatorKillHouse.NativeMaterials.In_Floor_Basement.json" />
+    <EmbeddedResource Include="OperatorKillHouse.NativeMaterials.In_Floor_Carpet.json" LogicalName="OperatorKillHouse.NativeMaterials.In_Floor_Carpet.json" />
+    <EmbeddedResource Include="OperatorKillHouse.NativeMaterials.Kitchen_Cabinet_Marble.json" LogicalName="OperatorKillHouse.NativeMaterials.Kitchen_Cabinet_Marble.json" />
+    <EmbeddedResource Include="OperatorKillHouse.NativeMaterials.Kitchen_Cabinet_Wood.json" LogicalName="OperatorKillHouse.NativeMaterials.Kitchen_Cabinet_Wood.json" />
+    <EmbeddedResource Include="OperatorKillHouse.NativeMaterials.Kitchen_TableChair.json" LogicalName="OperatorKillHouse.NativeMaterials.Kitchen_TableChair.json" />
+    <EmbeddedResource Include="OperatorKillHouse.NativeMaterials.Lamps_House_Off.json" LogicalName="OperatorKillHouse.NativeMaterials.Lamps_House_Off.json" />
+    <EmbeddedResource Include="OperatorKillHouse.NativeMaterials.Sofa_House.json" LogicalName="OperatorKillHouse.NativeMaterials.Sofa_House.json" />
+    <EmbeddedResource Include="OperatorKillHouse.NativeMaterials.Toilet_House.json" LogicalName="OperatorKillHouse.NativeMaterials.Toilet_House.json" />
+    <EmbeddedResource Include="OperatorKillHouse.NativeMaterials.WorkDesk.json" LogicalName="OperatorKillHouse.NativeMaterials.WorkDesk.json" />
+    <EmbeddedResource Include="OperatorKillHouse.NativeMaterials.Couch_Fabric.json" LogicalName="OperatorKillHouse.NativeMaterials.Couch_Fabric.json" />
+    <EmbeddedResource Include="OperatorKillHouse.NativeMaterials.PillowLarge.json" LogicalName="OperatorKillHouse.NativeMaterials.PillowLarge.json" />
+    <EmbeddedResource Include="OperatorKillHouse.NativeMaterials.PillowSmall.json" LogicalName="OperatorKillHouse.NativeMaterials.PillowSmall.json" />
+    <EmbeddedResource Include="OperatorKillHouse.NativeMaterials.Floor.json" LogicalName="OperatorKillHouse.NativeMaterials.Floor.json" />
+    <EmbeddedResource Include="OperatorKillHouse.NativeMaterials.RM-Steel-smooth.json" LogicalName="OperatorKillHouse.NativeMaterials.RM Steel smooth.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="BepInEx.Core" />
+    <Reference Include="BepInEx.Unity.IL2CPP" />
+    <Reference Include="UnityEngine.CoreModule" />
+    <Reference Include="AstarPathfindingProject" />
+    <Reference Include="Assembly-CSharp" />
+    <Reference Include="Assembly-CSharp-firstpass" />
+    <Reference Include="OperatorModAPI" />
+    <Reference Include="Unity.RenderPipelines.Core.Runtime" />
+    <Reference Include="Unity.RenderPipelines.HighDefinition.Runtime" />
+    <Reference Include="UnityEngine.PhysicsModule" />
+    <Reference Include="UnityEngine.AudioModule" />
+    <Reference Include="Mirror" />
+    <Reference Include="Il2CppInterop.Runtime" />
+    <Reference Include="Il2Cppmscorlib" />
+    <Reference Include="PackageTools" />
+  </ItemGroup>
+</Project>

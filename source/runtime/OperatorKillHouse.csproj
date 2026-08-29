@@ -1,7 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
-    <AssemblyName>OperatorKillHouse</AssemblyName>
+    <Version>0.1.18</Version>
+    <OperatorLoader Condition="'$(OperatorLoader)' == ''">BepInEx</OperatorLoader>
+    <AssemblyName Condition="'$(OperatorLoader)' != 'MelonLoader'">OperatorKillHouse</AssemblyName>
+    <AssemblyName Condition="'$(OperatorLoader)' == 'MelonLoader'">OperatorKillHouse.MelonLoader</AssemblyName>
     <RootNamespace>OperatorKillHouse</RootNamespace>
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>disable</Nullable>
@@ -12,25 +15,38 @@
     <Deterministic>true</Deterministic>
     <DebugType Condition="'$(Configuration)' == 'Release'">none</DebugType>
     <DebugSymbols Condition="'$(Configuration)' == 'Release'">false</DebugSymbols>
+    <KillHouseSourceRoot Condition="'$(KillHouseSourceRoot)' == ''">$(MSBuildThisFileDirectory)..</KillHouseSourceRoot>
+    <OperatorModApiRoot Condition="'$(OperatorModApiRoot)' == '' and Exists('$(MSBuildThisFileDirectory)..\..\..\Operator_GroceryStore_Mod\_public_release\operator-mod-api\src\OperatorModAPI\OperatorModAPI.csproj')">$(MSBuildThisFileDirectory)..\..\..\Operator_GroceryStore_Mod\_public_release\operator-mod-api</OperatorModApiRoot>
+    <OperatorModApiRoot Condition="'$(OperatorModApiRoot)' == '' and Exists('$(MSBuildThisFileDirectory)..\..\..\..\..\Operator_GroceryStore_Mod\_public_release\operator-mod-api\src\OperatorModAPI\OperatorModAPI.csproj')">$(MSBuildThisFileDirectory)..\..\..\..\..\Operator_GroceryStore_Mod\_public_release\operator-mod-api</OperatorModApiRoot>
+    <MelonLoaderDir Condition="'$(MelonLoaderDir)' == '' and Exists('$(MSBuildThisFileDirectory)..\..\..\Operator_GroceryStore_Mod\_dependencies\MelonLoader\v0.7.3\MelonLoader\net6\MelonLoader.dll')">$(MSBuildThisFileDirectory)..\..\..\Operator_GroceryStore_Mod\_dependencies\MelonLoader\v0.7.3\MelonLoader\net6</MelonLoaderDir>
+    <MelonLoaderDir Condition="'$(MelonLoaderDir)' == '' and Exists('$(MSBuildThisFileDirectory)..\..\..\..\..\Operator_GroceryStore_Mod\_dependencies\MelonLoader\v0.7.3\MelonLoader\net6\MelonLoader.dll')">$(MSBuildThisFileDirectory)..\..\..\..\..\Operator_GroceryStore_Mod\_dependencies\MelonLoader\v0.7.3\MelonLoader\net6</MelonLoaderDir>
+    <DefineConstants Condition="'$(OperatorLoader)' == 'MelonLoader'">$(DefineConstants);MELONLOADER</DefineConstants>
+    <IntermediateOutputPath>obj\$(OperatorLoader)\$(Configuration)\</IntermediateOutputPath>
+    <OutputPath Condition="'$(OperatorLoader)' == 'MelonLoader'">bin\$(Configuration)\MelonLoader\</OutputPath>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="OperatorKillHousePlugin.cs" />
-    <EmbeddedResource Include="..\unity_project\Assets\VektorKillHouse\Native\Residential\SourceMaterials\*.json">
+    <Compile Include="MelonAssemblyInfo.cs" />
+    <EmbeddedResource Include="$(KillHouseSourceRoot)\unity_project\Assets\VektorKillHouse\Native\Residential\SourceMaterials\*.json">
       <LogicalName>OperatorKillHouse.NativeMaterials.%(Filename)%(Extension)</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\unity_project\Assets\VektorKillHouse\Native\ResidentialComplete\SourceMaterials\*.json">
+    <EmbeddedResource Include="$(KillHouseSourceRoot)\unity_project\Assets\VektorKillHouse\Native\ResidentialComplete\SourceMaterials\*.json">
       <LogicalName>OperatorKillHouse.NativeMaterials.%(Filename)%(Extension)</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\unity_project\Assets\VektorKillHouse\Native\ResidentialHierarchy\SourceMaterials\*.json">
+    <EmbeddedResource Include="$(KillHouseSourceRoot)\unity_project\Assets\VektorKillHouse\Native\ResidentialHierarchy\SourceMaterials\*.json">
       <LogicalName>OperatorKillHouse.NativeMaterials.%(Filename)%(Extension)</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\unity_project\Assets\VektorKillHouse\Native\WarehousePvp\SourceMaterials\*.json">
+    <EmbeddedResource Include="$(KillHouseSourceRoot)\unity_project\Assets\VektorKillHouse\Native\WarehousePvp\SourceMaterials\*.json">
       <LogicalName>OperatorKillHouse.NativeMaterials.%(Filename)%(Extension)</LogicalName>
     </EmbeddedResource>
-    <Reference Include="BepInEx.Core"><HintPath>$(OperatorGameDir)\BepInEx\core\BepInEx.Core.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="BepInEx.Unity.Common"><HintPath>$(OperatorGameDir)\BepInEx\core\BepInEx.Unity.Common.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="BepInEx.Unity.IL2CPP"><HintPath>$(OperatorGameDir)\BepInEx\core\BepInEx.Unity.IL2CPP.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="Il2CppInterop.Runtime"><HintPath>$(OperatorGameDir)\BepInEx\core\Il2CppInterop.Runtime.dll</HintPath><Private>false</Private></Reference>
+    <ProjectReference Include="$(OperatorModApiRoot)\src\OperatorModAPI\OperatorModAPI.csproj"><Private>false</Private></ProjectReference>
+    <ProjectReference Include="$(OperatorModApiRoot)\src\OperatorModAPI.MelonLoader\OperatorModAPI.MelonLoader.csproj" Condition="'$(OperatorLoader)' == 'MelonLoader'"><Private>false</Private></ProjectReference>
+    <Reference Include="BepInEx.Core" Condition="'$(OperatorLoader)' != 'MelonLoader'"><HintPath>$(OperatorGameDir)\BepInEx\core\BepInEx.Core.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="BepInEx.Unity.Common" Condition="'$(OperatorLoader)' != 'MelonLoader'"><HintPath>$(OperatorGameDir)\BepInEx\core\BepInEx.Unity.Common.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="BepInEx.Unity.IL2CPP" Condition="'$(OperatorLoader)' != 'MelonLoader'"><HintPath>$(OperatorGameDir)\BepInEx\core\BepInEx.Unity.IL2CPP.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="MelonLoader" Condition="'$(OperatorLoader)' == 'MelonLoader'"><HintPath>$(MelonLoaderDir)\MelonLoader.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Il2CppInterop.Runtime" Condition="'$(OperatorLoader)' != 'MelonLoader'"><HintPath>$(OperatorGameDir)\BepInEx\core\Il2CppInterop.Runtime.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Il2CppInterop.Runtime" Condition="'$(OperatorLoader)' == 'MelonLoader'"><HintPath>$(MelonLoaderDir)\Il2CppInterop.Runtime.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="Il2Cppmscorlib"><HintPath>$(OperatorGameDir)\BepInEx\interop\Il2Cppmscorlib.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="Il2CppSystem"><HintPath>$(OperatorGameDir)\BepInEx\interop\Il2CppSystem.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="Il2CppSystem.Core"><HintPath>$(OperatorGameDir)\BepInEx\interop\Il2CppSystem.Core.dll</HintPath><Private>false</Private></Reference>
@@ -47,12 +63,19 @@
     <Reference Include="UnityEngine.AssetBundleModule"><HintPath>$(OperatorGameDir)\BepInEx\interop\UnityEngine.AssetBundleModule.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="UnityEngine.PhysicsModule"><HintPath>$(OperatorGameDir)\BepInEx\interop\UnityEngine.PhysicsModule.dll</HintPath><Private>false</Private></Reference>
   </ItemGroup>
+  <Target Name="RequireResolvedLoaderInputs" BeforeTargets="PrepareForBuild">
+    <Error Condition="'$(OperatorModApiRoot)' == ''" Text="Operator Mod API root could not be resolved from the private or public Kill House source layout. Set OperatorModApiRoot explicitly." />
+    <Error Condition="'$(OperatorModApiRoot)' != '' and !Exists('$(OperatorModApiRoot)\src\OperatorModAPI\OperatorModAPI.csproj')" Text="Operator Mod API Core project is missing under OperatorModApiRoot=$(OperatorModApiRoot)." />
+    <Error Condition="'$(OperatorLoader)' == 'MelonLoader' and '$(OperatorModApiRoot)' != '' and !Exists('$(OperatorModApiRoot)\src\OperatorModAPI.MelonLoader\OperatorModAPI.MelonLoader.csproj')" Text="Operator Mod API MelonLoader adapter project is missing under OperatorModApiRoot=$(OperatorModApiRoot)." />
+    <Error Condition="'$(OperatorLoader)' == 'MelonLoader' and '$(MelonLoaderDir)' == ''" Text="MelonLoader v0.7.3 could not be resolved from the private or public Kill House source layout. Set MelonLoaderDir explicitly." />
+    <Error Condition="'$(OperatorLoader)' == 'MelonLoader' and '$(MelonLoaderDir)' != '' and !Exists('$(MelonLoaderDir)\MelonLoader.dll')" Text="MelonLoader.dll is missing under MelonLoaderDir=$(MelonLoaderDir)." />
+  </Target>
   <Target Name="RequireAuthorizedNativeMaterialProfiles" BeforeTargets="CoreCompile"
           Condition="'$(AllowMissingNativeMaterialProfiles)' != 'true'">
     <ItemGroup>
-      <_NativeMaterialProfiles Include="..\unity_project\Assets\VektorKillHouse\Native\**\SourceMaterials\*.json" />
+      <_NativeMaterialProfiles Include="$(KillHouseSourceRoot)\unity_project\Assets\VektorKillHouse\Native\**\SourceMaterials\*.json" />
     </ItemGroup>
     <Error Condition="'@(_NativeMaterialProfiles)' == ''"
-           Text="Authorized OPERATOR native material profile inputs are missing. Read the Native asset placeholder and populate them from your own installed game, or set AllowMissingNativeMaterialProfiles=true for a compile-only source check." />
+           Text="Authorized OPERATOR native material profile inputs are missing. Populate them from the exact installed game, or set AllowMissingNativeMaterialProfiles=true only for a compile-only source check." />
   </Target>
 </Project>

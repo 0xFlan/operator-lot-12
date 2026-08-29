@@ -13,33 +13,37 @@ Related projects:
 
 | Component | Version/status |
 | --- | --- |
-| Map package | `0.1.18` |
-| Runtime companion | `0.1.16` |
-| Required Modded Operations | `0.3.29` |
-| Bundled internal Operator Mod API | `0.2.0-alpha.6` |
-| PVE | 1-4 players; 10-15 enemies |
+| Map package | `0.1.22` |
+| Runtime companion | `0.1.18` (BepInEx and MelonLoader variants) |
+| Required Modded Operations | `0.3.30` |
+| Bundled internal Operator Mod API | `0.2.0-alpha.7` |
+| PVE | 1-4 players; selectable 10-60 enemies |
 | PVP | 2-12 players; six authored spawns per team |
 | Multiplayer status | `PROVEN-STATIC`; live host/remote proof pending |
 | Public release status | Source checkpoint only; no binary release from this repo |
 
-PVP uses the native round mode, but it is not labeled supported until a real
-host and separate remote client complete the exact-content, movement, firearm,
-score, respawn, restart, and return test matrix. Online PVE is also unproven.
+Protocol v6 gives both PVE and PVP exact content, scene-generation, companion,
+runtime-owner, owner-local grounded placement, Restart, and teardown barriers.
+PVE adds the same authoritative server-spawned AI population receipt on every
+peer. PVP uses the native round mode and zero PVE AI. Neither mode is labeled
+supported until a real host and separate remote complete its paired-log matrix.
 
 ## Main features
 
 - Ten premade single-floor kill-house layouts selected without immediate repeats.
-- PVE clear-and-extract mission with 10-15 native enemies.
+- PVE clear-and-extract mission with a private vanilla-style 10-60 enemy selector.
 - Separate PVP operation for 2-12 players with six spawns per team.
 - Native OPERATOR doors, furniture, warehouse presentation, lighting, and post-processing.
+- Preloaded decompressed door audio to reduce the hitch on the first doors opened.
 - Restart keeps the selected layout for the current operation.
-- Exact package, companion, framework, and runtime identity checks for PVP testing.
+- Completed-operation teardown releases transition ownership so another packaged map can load next.
+- Exact package, companion, framework, runtime, player, and PVE population checks for multiplayer testing.
 
 ## Repository layout
 
 | Path | Purpose |
 | --- | --- |
-| `source/runtime` | BepInEx IL2CPP map companion source. |
+| `source/runtime` | Shared source for isolated BepInEx and MelonLoader companions. |
 | `source/unity_project/Assets/VektorKillHouse/Editor` | Deterministic Unity authoring and validation code. |
 | `source/design` | Layout, provenance, and native-asset contracts. |
 | `source/operator_map_packages` | Exact documentary package manifest plus payload placeholders. |
@@ -50,8 +54,8 @@ score, respawn, restart, and return test matrix. Online PVE is also unproven.
 ## Required local inputs
 
 - A legally owned, installed copy of OPERATOR.
-- BepInEx and the installed game's generated interop assemblies.
-- OPERATOR: Modded Operations `0.3.29` with its bundled internal API alpha.6.
+- exactly one supported BepInEx or MelonLoader runtime plus generated interop assemblies.
+- OPERATOR: Modded Operations `0.3.30` with its bundled internal API alpha.7.
 - Unity `6000.3.8f1` with HDRP `17.3.0`.
 - Native asset inputs extracted from your own installed game.
 
@@ -71,6 +75,12 @@ before building. A clone is source, not an installable mod.
 ```powershell
 dotnet build .\source\runtime\OperatorKillHouse.csproj `
   -c Release `
+  -p:OperatorLoader=BepInEx `
+  -p:OperatorGameDir='<OPERATOR_INSTALL>'
+
+dotnet build .\source\runtime\OperatorKillHouse.csproj `
+  -c Release `
+  -p:OperatorLoader=MelonLoader `
   -p:OperatorGameDir='<OPERATOR_INSTALL>'
 ```
 
@@ -89,16 +99,23 @@ Install Modded Operations first. The LOT 12 archive then extracts directly into
     plugins/
       OperatorKillHouse/
         OperatorKillHouse.dll
-    OperatorMods/
-      community.vektor-modular-killhouse/
-        operator-map-package.json
-        content/operator_vektor_killhouse
-        content/operator_vektor_killhouse_scenes
-        media/vektor_modular_killhouse_preview.png
+  Mods/
+    OperatorKillHouse.MelonLoader.dll
+  OperatorMods/
+    community.vektor-modular-killhouse/
+      operator-map-package.json
+      content/operator_vektor_killhouse
+      content/operator_vektor_killhouse_scenes
+      media/vektor_modular_killhouse_preview.png
 ```
+
+One dual-loader archive may carry both companion entries, but only the entry
+whose loader is active can execute. Never activate BepInEx and MelonLoader in
+the same install. The package under `OperatorMods` is shared and is not owned
+by the executable-suite uninstaller.
 
 ## License and asset boundary
 
 The MIT License covers original code and documentation in this repository. It
-does not relicense OPERATOR, Unity, BepInEx, Mirror, third-party libraries, or
+does not relicense OPERATOR, Unity, BepInEx, MelonLoader, Mirror, third-party libraries, or
 any omitted game-derived asset. See [Third-party notices](THIRD_PARTY_NOTICES.md).

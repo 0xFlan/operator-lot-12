@@ -89,7 +89,7 @@ def main() -> int:
         "source/unity_project/Packages/manifest.json",
         "source/unity_project/ProjectSettings/ProjectVersion.txt",
         "decompiled/README.md",
-        "decompiled/release-0.1.16/OperatorKillHouse/OperatorKillHousePlugin.cs",
+        "decompiled/release-0.1.17/OperatorKillHouse/OperatorKillHousePlugin.cs",
         "schemas/operator-map-package-v2.schema.json",
         "packaging/README-PACKAGE-PLACEHOLDER.md",
     )
@@ -100,15 +100,16 @@ def main() -> int:
     source_path = ROOT / "source/runtime/OperatorKillHousePlugin.cs"
     if source_path.is_file():
         data = source_path.read_bytes()
-        if len(data) != 310512 or sha256_bytes(data) != (
-            "6A28B5319B1C7D06C0ECE95A0B51B49A09BB3A934A27B7C81044986F606AA0AF"
+        if len(data) != 371710 or sha256_bytes(data) != (
+            "73D7F68EA4BD30B544ACD922316E1CEDDC637ACDA2768F149B992208CF693026"
         ):
-            errors.append("authored companion source identity does not match checkpoint 0.1.16")
+            errors.append("authored companion source identity does not match checkpoint 0.1.18")
         text = data.decode("utf-8", errors="replace")
         for fragment in (
-            '[BepInDependency("operator.modded-operations", "0.3.29")]',
+            '[BepInDependency("operator.modded-operations", "0.3.30")]',
+            '[BepInDependency("operator.modapi", "0.2.0-alpha.7")]',
             'public const string PluginGuid = "operator.vektor-killhouse";',
-            'public const string PluginVersion = "0.1.16";',
+            'public const string PluginVersion = "0.1.18";',
             'private const string ModdedOperationsReadyMarkerName = "MODDED_OPERATIONS_RUNTIME_CONTRACT_READY";',
             'private const string ModdedOperationsFailureMarkerName = "MODDED_OPERATIONS_RUNTIME_CONTRACT_FAILED";',
         ):
@@ -123,11 +124,15 @@ def main() -> int:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         if manifest.get("packageId") != "community.vektor-modular-killhouse":
             errors.append("manifest package ID changed")
-        if manifest.get("version") != "0.1.18":
+        if manifest.get("version") != "0.1.22":
             errors.append("manifest package version changed")
         maps = manifest.get("maps", [])
         if len(maps) != 1 or len(maps[0].get("sceneVariants", [])) != 10:
             errors.append("manifest must contain one map with ten scene variants")
+        elif maps[0].get("operations", [{}])[0].get("minEnemies") != 10 or (
+            maps[0].get("operations", [{}])[0].get("maxEnemies") != 60
+        ):
+            errors.append("LOT 12 PVE enemy range must remain 10..60")
         operations = maps[0].get("operations", []) if maps else []
         modes = {operation.get("mode") for operation in operations}
         if modes != {"pve", "pvp"}:
@@ -141,10 +146,10 @@ def main() -> int:
 
     expected_tree = (
         4,
-        363072,
-        "6CAB81E40397275AEE7766A96793DFEC756F9E50EEFDD208F4DE57D73842324E",
+        414637,
+        "31D8541D5B0B574D1A2E35078584FB644D6E0A034FD6BEA7DF74EAFD0B0D76EF",
     )
-    decompiled_root = ROOT / "decompiled/release-0.1.16"
+    decompiled_root = ROOT / "decompiled/release-0.1.17"
     if decompiled_root.is_dir():
         actual_tree = decompiled_tree_identity(decompiled_root)
         if actual_tree != expected_tree:

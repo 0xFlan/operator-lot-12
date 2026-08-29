@@ -3,7 +3,7 @@
   "schemaVersion": 2,
   "packageId": "community.vektor-modular-killhouse",
   "displayName": "LOT 12: FALSE WALL",
-  "version": "0.1.18",
+  "version": "0.1.22",
   "maps": [
     {
       "mapId": "community.vektor-modular-killhouse.modular-killhouse",
@@ -27,8 +27,10 @@
       ],
       "runtimeCompanion": {
         "pluginGuid": "operator.vektor-killhouse",
-        "pluginVersion": "0.1.16",
-        "sha256": "a3240fd73a269572a8421b3e8428d899ca4d8b91642691a4161bb7bce33cd427",
+        "pluginVersion": "0.1.18",
+        "sha256": "e0acedea31203009e74bc631110b81abd581d80fb68aa979b41119578dfd9e34",
+        "melonLoaderSha256": "5fd24a36d93d8d7f40df37ce3abc1d32024ebdc88b3c42bec8d6f53d5437eeb6",
+        "runtimeContentId": "37966b4bc33f11d2061ecf87d2de73730be0b33fe2baf92f7e23a633dc80db25",
         "readyMarkerName": "MODDED_OPERATIONS_RUNTIME_CONTRACT_READY",
         "failureMarkerName": "MODDED_OPERATIONS_RUNTIME_CONTRACT_FAILED"
       },
@@ -44,7 +46,7 @@
           "minPlayers": 1,
           "maxPlayers": 4,
           "minEnemies": 10,
-          "maxEnemies": 15,
+          "maxEnemies": 60,
           "pveAiProfile": {
             "id": "killhouse-indoor-assault-v3",
             "detectionRangeMeters": 36.0,
@@ -104,13 +106,13 @@
   "files": [
     {
       "path": "content/operator_vektor_killhouse",
-      "bytes": 77324865,
-      "sha256": "06b3419054bfbaffc6ad9adae1cbc0b6d2dca36fee1d516538fe1098ee753ec8"
+      "bytes": 77332773,
+      "sha256": "b5c062f7d2e866807533a2e41907bd1c7188a07a71c9fed6accb07d98cad1173"
     },
     {
       "path": "content/operator_vektor_killhouse_scenes",
-      "bytes": 739607,
-      "sha256": "c864e34117352efcaacf0bd29189701c84c9380d41b1d2ff4957567e4997a375"
+      "bytes": 776903,
+      "sha256": "c92d2585300daed821fc9769ba1727dd5379eeefc198d1948665fc4bf938dc50"
     },
     {
       "path": "media/vektor_modular_killhouse_preview.png",

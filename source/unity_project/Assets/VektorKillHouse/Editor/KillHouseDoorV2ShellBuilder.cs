@@ -237,8 +237,8 @@ public static class KillHouseDoorV2ShellBuilder
 
     private static void BuildAudioBank()
     {
-        string[] guids = AssetDatabase.FindAssets("t:AudioClip", new[] { AudioFolder });
-        AudioClip[] clips = guids.Select(AssetDatabase.GUIDToAssetPath).Select(AssetDatabase.LoadAssetAtPath<AudioClip>)
+        string[] clipPaths = ConfigureDoorAudioImporters();
+        AudioClip[] clips = clipPaths.Select(AssetDatabase.LoadAssetAtPath<AudioClip>)
             .Where(clip => clip != null).OrderBy(clip => clip.name, StringComparer.Ordinal).ToArray();
         if (clips.Length != 47) throw new InvalidDataException("DoorV2 audio bank requires exactly 47 installed wooden-door clips; found " + clips.Length + ".");
         string[] requiredPrefixes = { "wooden door opening ", "wooden door locked ", "wooden door closing ", "wooden door thud ", "wooden door breach " };
@@ -269,6 +269,36 @@ public static class KillHouseDoorV2ShellBuilder
         {
             UnityEngine.Object.DestroyImmediate(root);
         }
+    }
+
+    private static string[] ConfigureDoorAudioImporters()
+    {
+        string[] paths = AssetDatabase.FindAssets(
+                "t:AudioClip",
+                new[] { AudioFolder })
+            .Select(AssetDatabase.GUIDToAssetPath)
+            .OrderBy(path => path, StringComparer.Ordinal)
+            .ToArray();
+        foreach (string path in paths)
+        {
+            AudioImporter importer = AssetImporter.GetAtPath(path) as AudioImporter;
+            if (importer == null)
+                throw new InvalidDataException(
+                    "DoorV2 audio clip has no AudioImporter: " + path);
+
+            AudioImporterSampleSettings settings = importer.defaultSampleSettings;
+            bool changed = !settings.preloadAudioData ||
+                importer.loadInBackground ||
+                settings.loadType != AudioClipLoadType.DecompressOnLoad;
+            if (!changed) continue;
+
+            importer.loadInBackground = false;
+            settings.preloadAudioData = true;
+            settings.loadType = AudioClipLoadType.DecompressOnLoad;
+            importer.defaultSampleSettings = settings;
+            importer.SaveAndReimport();
+        }
+        return paths;
     }
 
     private static void InstallRuggedAnimatedDoorVisual(GameObject shellRoot)

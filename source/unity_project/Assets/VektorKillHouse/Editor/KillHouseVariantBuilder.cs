@@ -23,14 +23,26 @@ public static class KillHouseVariantBuilder
     private const float WallModuleWidth = 2f;
     private const float PartitionHeight = 3.0f;
     private const float WarehouseRoofHeight = 11.35f;
-    private const float WarehouseFixtureHeight = 6.8f;
+    private const float WarehouseFixtureRoofGap = .04f;
+    private const float WarehouseFixtureLightDrop = .18f;
     private const float WarehouseMargin = 4.0f;
     private const float WarehouseGroundElevation = -.015f;
     private const float WarehouseFixtureSpacing = 8.0f;
     private const float MaximumConnectorLength = 8f;
     private const float CenterRoomPropWallClearance = .82f;
+    // Keep authoring candidate rejection byte-for-behaviour aligned with the
+    // companion's live scene-contract gate.  A looser authoring tolerance can
+    // serialize furniture that the player correctly rejects after loading.
+    private const float CenterRoomSiblingOverlapTolerance = .02f;
     private const float CenterRoomCirculationStep = .5f;
     private const float CenterRoomCirculationRadius = .42f;
+    private const int CertifiedPveMaximumEnemies = 60;
+    // Author more than the declared maximum so the live navigation/grounding pass can
+    // still certify sixty positions if a small number of markers normalize together.
+    private const int PveAuthoredEnemyMarkerTarget = 72;
+    private const int PveMinimumMarkersPerCombatRoom = 1;
+    private const float PveEnemySpawnPairClearance = 2.05f;
+    private const float PveEnemySpawnPortalClearance = 1.35f;
     private const int PvpSpawnsPerTeam = 6;
     private const int PvpRoomsPerSector = 3;
     private const float PvpSpawnCapsuleRadius = .42f;
@@ -187,6 +199,27 @@ public static class KillHouseVariantBuilder
         {
             Position = position;
             Rotation = rotation;
+        }
+    }
+
+    private sealed class TacticalEnemyCandidate
+    {
+        public readonly int RoomIndex;
+        public readonly Vector3 Position;
+        public readonly Vector3 CoverPoint;
+        public readonly Vector3 ThreatPoint;
+        public readonly string Role;
+        public readonly string CoverLabel;
+
+        public TacticalEnemyCandidate(int roomIndex, Vector3 position, Vector3 coverPoint,
+            Vector3 threatPoint, string role, string coverLabel)
+        {
+            RoomIndex = roomIndex;
+            Position = position;
+            CoverPoint = coverPoint;
+            ThreatPoint = threatPoint;
+            Role = role;
+            CoverLabel = coverLabel;
         }
     }
 
@@ -378,6 +411,10 @@ public static class KillHouseVariantBuilder
         Transform lightsRoot = Child(root, "70_LIGHTING").transform;
         Instantiate(KillHouseDoorV2ShellBuilder.LoadAudioBank(), runtimeDependenciesRoot, "NATIVE_DOORV2_AUDIO_BANK");
         BuildWarehouseShell(warehouseRoot, roomCenters, roomSizes);
+        Physics.SyncTransforms();
+        Collider[] warehouseRoofColliders = FindWarehouseRoofColliders(warehouseRoot);
+        if (warehouseRoofColliders.Length == 0)
+            throw new InvalidDataException("The exact warehouse roof has no enabled collision surface for fixture mounting.");
 
         var roomObjects = new List<GameObject>();
         for (int index = 0; index < cells.Length; index++)
@@ -391,7 +428,8 @@ public static class KillHouseVariantBuilder
             if (index == 0) BuildFixedSafeRoomDressing(propsRoot, center, roomSizes[index], connections);
             else BuildRoomDressing(propsRoot, layout.Rooms[index], center, roomSizes[index], variantIndex, index,
                 variant.Motif, connections);
-            BuildRoomLights(lightsRoot, layout.Rooms[index], center, roomSizes[index], variantIndex, index);
+            BuildRoomLights(lightsRoot, layout.Rooms[index], center, roomSizes[index], variantIndex, index,
+                warehouseRoofColliders);
         }
         BuildCenterRoomDressingForScene(propsRoot, layout, roomCenters, roomSizes, variantIndex, variant.Motif,
             connections);
@@ -668,7 +706,7 @@ public static class KillHouseVariantBuilder
             "PACKED_FOOTPRINT_BY_ACTUAL_ROOM_EXTENTS", "SHARED_WALLS_AND_SHORT_CONNECTORS_MAX_8M",
             "DOORV2_OFFICIAL_PREFAB_REQUIRED", "SPATIAL_MOTIF_" + variant.Motif.ToString().ToUpperInvariant(),
             "LOW_PARTITIONS_USE_NATIVE_SUBURB_COUNTERS", "PILLAR_CANDIDATE_PENDING_COMPLETE_CLOSURE",
-            "OPEN_TOP_KILLHOUSE_INSIDE_HIGH_WAREHOUSE", "WAREHOUSE_ROOF_HEIGHT_9M",
+            "OPEN_TOP_KILLHOUSE_INSIDE_HIGH_WAREHOUSE", "WAREHOUSE_ROOF_HEIGHT_11_35M",
             "VANILLA_INDUSTRIAL_FLUORESCENT_FIXTURES", "NO_ROOM_HEIGHT_CEILINGS",
             "NO_SKY_NO_AMBIENT_NO_REFLECTION", "ONLY_VISIBLE_WAREHOUSE_FIXTURES_EMIT_LIGHT",
             "WALL_BACKED_FURNITURE_WITH_PORTAL_CLEARANCE", "CENTER_ROOM_FURNITURE_FULL_NATIVE_SCALE",
@@ -1395,7 +1433,8 @@ public static class KillHouseVariantBuilder
             Transform sibling = dressing.GetChild(index);
             if (sibling == candidate || CenterRoomSurfaceDecoration(sibling) ||
                 !TryPhysicalBounds(sibling.gameObject, out Bounds siblingBounds)) continue;
-            if (BoundsOverlap(candidateBounds, siblingBounds, .06f)) return sibling.name;
+            if (BoundsOverlap(candidateBounds, siblingBounds, CenterRoomSiblingOverlapTolerance))
+                return sibling.name;
         }
         return string.Empty;
     }
@@ -1636,7 +1675,7 @@ public static class KillHouseVariantBuilder
     }
 
     private static void BuildRoomLights(Transform parent, RoomType type, Vector3 center, Vector2 size,
-        int variantIndex, int index)
+        int variantIndex, int index, Collider[] warehouseRoofColliders)
     {
         RoomLightState state = SelectRoomLightState(variantIndex, index);
         string stateName = state.ToString().ToUpperInvariant();
@@ -1659,14 +1698,24 @@ public static class KillHouseVariantBuilder
                 int ordinal = row * columns + column;
                 Vector3 fixtureCenter = center + new Vector3(
                     -size.x * .5f + cellWidth * (column + .5f),
-                    WarehouseFixtureHeight,
+                    WarehouseRoofHeight,
                     -size.y * .5f + cellDepth * (row + .5f));
                 GameObject visual = Instantiate(KillHouseNativePrefabBuilder.Load(fixture), holder,
                     "NATIVE_" + fixture + "_" + ordinal.ToString("00"));
                 AlignCeiling(visual, fixtureCenter,
                     Quaternion.Euler(-90f, ((row + column + index) & 1) == 0 ? 0f : 90f, 0f), Vector3.one * 1.5f);
+                Bounds provisionalBounds = RendererBounds(visual);
+                float roofUnderside = ResolveLowestWarehouseRoofSurface(
+                    warehouseRoofColliders,
+                    provisionalBounds);
+                fixtureCenter.y = roofUnderside - WarehouseFixtureRoofGap;
+                AlignCeiling(visual, fixtureCenter,
+                    Quaternion.Euler(-90f, ((row + column + index) & 1) == 0 ? 0f : 90f, 0f), Vector3.one * 1.5f);
                 GameObject lightObject = Child(holder.gameObject, "ROOM_LOCAL_FIXTURE_LIGHT_" + ordinal.ToString("00"));
-                lightObject.transform.position = new Vector3(fixtureCenter.x, WarehouseFixtureHeight - .18f, fixtureCenter.z);
+                lightObject.transform.position = new Vector3(
+                    fixtureCenter.x,
+                    fixtureCenter.y - WarehouseFixtureLightDrop,
+                    fixtureCenter.z);
                 lightObject.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
                 Light light = lightObject.AddComponent<Light>();
                 light.type = LightType.Spot;
@@ -1718,13 +1767,21 @@ public static class KillHouseVariantBuilder
         volume.sharedProfile = KillHouseVanillaIndoorRenderBuilder.LoadProfile();
     }
 
-    private static bool FixtureLightValid(Light light)
+    private static bool FixtureLightValid(Light light, Collider[] warehouseRoofColliders)
     {
         if (light == null || light.transform.parent == null || light.type != LightType.Spot ||
-            light.shadows != LightShadows.Soft || light.transform.position.y < WarehouseFixtureHeight - .25f ||
-            light.transform.position.y > WarehouseFixtureHeight - .1f || light.range < 11f ||
+            light.shadows != LightShadows.Soft || light.range < 11f ||
             light.spotAngle < 56f || light.spotAngle > 60f || !light.useColorTemperature ||
             light.colorTemperature < 4200f || light.colorTemperature > 4400f)
+            return false;
+        string suffix = light.name.Substring("ROOM_LOCAL_FIXTURE_LIGHT_".Length);
+        Transform fixture = light.transform.parent.GetComponentsInChildren<Transform>(true)
+            .FirstOrDefault(item => string.Equals(item.name,
+                "NATIVE_Lamp_fluorescent_B_" + suffix, StringComparison.Ordinal));
+        if (fixture == null || !TryFixtureRoofGap(fixture, warehouseRoofColliders, out float roofGap,
+                out float fixtureTop) ||
+            Mathf.Abs(roofGap - WarehouseFixtureRoofGap) > .015f ||
+            Mathf.Abs((fixtureTop - light.transform.position.y) - WarehouseFixtureLightDrop) > .015f)
             return false;
         string holder = light.transform.parent.name;
         if (holder.EndsWith("_STATE_LIT", StringComparison.Ordinal))
@@ -1736,15 +1793,86 @@ public static class KillHouseVariantBuilder
         return false;
     }
 
-    private static bool FixtureVisualValid(Transform fixture)
+    private static bool FixtureVisualValid(Transform fixture, Collider[] warehouseRoofColliders)
     {
         if (fixture == null) return false;
         // Lamp_fluorescent_B is authored in XY; its local -Z is the visible underside.
         // Match the installed vanilla fixture orientation so that underside faces the player.
         if (Vector3.Dot(fixture.TransformDirection(Vector3.back).normalized, Vector3.down) < .98f) return false;
         Renderer[] renderers = fixture.GetComponentsInChildren<Renderer>(true);
-        return renderers.Length > 0 && renderers.All(renderer => renderer.sharedMaterials.Length > 0 &&
-            renderer.sharedMaterials.All(KillHouseNativeMaterialBuilder.HasKillHouseFluorescentEmissionContract));
+        return TryFixtureRoofGap(fixture, warehouseRoofColliders, out float roofGap, out _) &&
+            Mathf.Abs(roofGap - WarehouseFixtureRoofGap) <= .015f &&
+            renderers.Length > 0 && renderers.All(renderer => renderer.sharedMaterials.Length > 0 &&
+                renderer.sharedMaterials.All(KillHouseNativeMaterialBuilder.HasKillHouseFluorescentEmissionContract));
+    }
+
+    private static Collider[] FindWarehouseRoofColliders(Transform warehouseRoot)
+    {
+        Transform roof = warehouseRoot == null ? null : warehouseRoot.Find(
+            "NATIVE_WarehousePvpCompleteShell/NATIVE_WarehouseRoof");
+        return roof == null ? Array.Empty<Collider>() : roof.GetComponentsInChildren<Collider>(true)
+            .Where(collider => collider != null && collider.enabled && !collider.isTrigger).ToArray();
+    }
+
+    private static bool TryFixtureRoofGap(Transform fixture, Collider[] roofColliders,
+        out float gap, out float fixtureTop)
+    {
+        gap = float.NaN;
+        fixtureTop = float.NaN;
+        if (fixture == null || roofColliders == null || roofColliders.Length == 0)
+            return false;
+        Bounds bounds = RendererBounds(fixture.gameObject);
+        fixtureTop = bounds.max.y;
+        try
+        {
+            gap = ResolveLowestWarehouseRoofSurface(roofColliders, bounds) - fixtureTop;
+            return float.IsFinite(gap);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static float ResolveLowestWarehouseRoofSurface(Collider[] roofColliders, Bounds fixtureBounds)
+    {
+        float minX = fixtureBounds.min.x;
+        float maxX = fixtureBounds.max.x;
+        float minZ = fixtureBounds.min.z;
+        float maxZ = fixtureBounds.max.z;
+        Vector2[] samples =
+        {
+            new Vector2(fixtureBounds.center.x, fixtureBounds.center.z),
+            new Vector2(minX, minZ), new Vector2(minX, maxZ),
+            new Vector2(maxX, minZ), new Vector2(maxX, maxZ),
+            new Vector2(minX, fixtureBounds.center.z), new Vector2(maxX, fixtureBounds.center.z),
+            new Vector2(fixtureBounds.center.x, minZ), new Vector2(fixtureBounds.center.x, maxZ)
+        };
+        float lowest = float.PositiveInfinity;
+        foreach (Vector2 sample in samples)
+        {
+            float surface = ResolveWarehouseRoofSurface(roofColliders, sample.x, sample.y);
+            if (surface < lowest) lowest = surface;
+        }
+        if (!float.IsFinite(lowest))
+            throw new InvalidDataException("A fluorescent fixture has no exact warehouse-roof surface above it.");
+        return lowest;
+    }
+
+    private static float ResolveWarehouseRoofSurface(Collider[] roofColliders, float worldX, float worldZ)
+    {
+        Ray ray = new Ray(new Vector3(worldX, WarehouseRoofHeight + 1f, worldZ), Vector3.down);
+        float nearestDistance = float.PositiveInfinity;
+        foreach (Collider collider in roofColliders)
+        {
+            if (collider != null && collider.Raycast(ray, out RaycastHit hit, WarehouseRoofHeight + 3f) &&
+                hit.distance < nearestDistance)
+                nearestDistance = hit.distance;
+        }
+        if (!float.IsFinite(nearestDistance))
+            throw new InvalidDataException("No exact warehouse-roof collision surface covers fixture point " +
+                worldX.ToString("F3") + "," + worldZ.ToString("F3") + ".");
+        return ray.origin.y - nearestDistance;
     }
 
     private static bool IndoorVolumeValid(Volume volume)
@@ -1801,11 +1929,12 @@ public static class KillHouseVariantBuilder
         Vector3[] roomCenters, Vector2[] roomSizes, ConnectionPlan[] connections, int variantIndex)
     {
         int[] distancesFromSafe = BuildGraphDistances(layout.Cells.Length, connections);
-        int markerIndex = 0;
+        var candidatesByRoom = new Dictionary<int, List<TacticalEnemyCandidate>>();
         for (int roomIndex = 1; roomIndex < roomCenters.Length; roomIndex++)
         {
             List<Vector3> threatPoints = BuildThreatPoints(roomIndex, roomCenters, roomSizes, connections,
                 distancesFromSafe);
+            var roomCandidates = new List<TacticalEnemyCandidate>();
             for (int ordinal = 0; ordinal < 2; ordinal++)
             {
                 int seed = variantIndex * 101 + roomIndex * 37 + ordinal * 17;
@@ -1831,27 +1960,140 @@ public static class KillHouseVariantBuilder
                     coverLabel = "ROOM_BOUNDARY_WALL";
                 }
 
-                markerIndex++;
-                GameObject envelope = Child(parent.gameObject,
-                    "TACTICAL_POSITION_" + markerIndex.ToString("00") + "_" + role);
-                GameObject marker = Child(envelope, "PVE_EnemySpawn_" + markerIndex.ToString("00"));
-                marker.transform.position = markerPosition;
-                Vector3 facing = threatPoint - markerPosition;
-                facing.y = 0f;
-                marker.transform.rotation = facing.sqrMagnitude < .01f
-                    ? Quaternion.identity
-                    : Quaternion.LookRotation(facing.normalized, Vector3.up);
-                GameObject roleMarker = Child(envelope, "TACTICAL_ROLE_" + role);
-                roleMarker.transform.position = markerPosition;
-                GameObject coverMarker = Child(envelope, "TACTICAL_COVER_POINT_" + SanitizeMarkerName(coverLabel));
-                coverMarker.transform.position = coverPoint;
-                GameObject threatMarker = Child(envelope, "TACTICAL_THREAT_POINT_ROOM_" + roomIndex.ToString("00"));
-                threatMarker.transform.position = new Vector3(threatPoint.x, 1.1f, threatPoint.z);
-                Child(envelope, "TACTICAL_NATIVE_BRAINAI_WANDER_RADIUS_12M").transform.position = markerPosition;
+                AddUniqueTacticalCandidate(roomCandidates, new TacticalEnemyCandidate(roomIndex, markerPosition,
+                    coverPoint, threatPoint, role, coverLabel));
+            }
+
+            foreach (TacticalEnemyCandidate candidate in BuildSupplementalTacticalCandidates(roomIndex,
+                         roomCenters[roomIndex], roomSizes[roomIndex], threatPoints, variantIndex))
+                AddUniqueTacticalCandidate(roomCandidates, candidate);
+            candidatesByRoom.Add(roomIndex, roomCandidates);
+        }
+
+        List<TacticalEnemyCandidate> selected = SelectCertifiedTacticalCandidates(candidatesByRoom,
+            distancesFromSafe);
+        for (int index = 0; index < selected.Count; index++)
+            BuildTacticalEnemyMarker(parent, selected[index], index + 1);
+
+        BuildPvpSpawnMarkers(parent, layout, roomCenters, roomSizes, connections);
+    }
+
+    private static IEnumerable<TacticalEnemyCandidate> BuildSupplementalTacticalCandidates(int roomIndex,
+        Vector3 roomCenter, Vector2 roomSize, IReadOnlyList<Vector3> threatPoints, int variantIndex)
+    {
+        float halfX = Mathf.Max(.55f, roomSize.x * .5f - .82f);
+        float halfZ = Mathf.Max(.55f, roomSize.y * .5f - .82f);
+        float phaseX = ((variantIndex + roomIndex) & 1) == 0 ? 0f : .31f;
+        float phaseZ = ((variantIndex * 3 + roomIndex) & 1) == 0 ? 0f : -.31f;
+        var positions = new List<Vector3>();
+        for (float x = -halfX + phaseX; x <= halfX + .01f; x += PveEnemySpawnPairClearance)
+        {
+            for (float z = -halfZ + phaseZ; z <= halfZ + .01f; z += PveEnemySpawnPairClearance)
+            {
+                Vector3 candidate = ClampInsideRoom(roomCenter + new Vector3(x, .05f, z), roomCenter, roomSize);
+                if (threatPoints.Any(threat => HorizontalDistance(candidate, threat) <
+                                               PveEnemySpawnPortalClearance))
+                    continue;
+                Vector3 bottom = candidate + Vector3.up * .42f;
+                Vector3 top = candidate + Vector3.up * 1.58f;
+                if (Physics.CheckCapsule(bottom, top, .3f, ~0, QueryTriggerInteraction.Ignore)) continue;
+                if (!TryFindBackedArchitecturalCoverPoint(candidate, roomCenter, roomSize, out Vector3 coverPoint))
+                    continue;
+                Vector3 threatPoint = threatPoints.OrderBy(threat => HorizontalDistance(candidate, threat))
+                    .ThenBy(threat => threat.x).ThenBy(threat => threat.z).First();
+                float coverDistance = HorizontalDistance(candidate, coverPoint);
+                if (coverDistance < .35f || coverDistance > 4.25f ||
+                    HorizontalDistance(candidate, threatPoint) < 1.25f)
+                    continue;
+                float edgeDistance = Mathf.Min(halfX - Mathf.Abs(candidate.x - roomCenter.x),
+                    halfZ - Mathf.Abs(candidate.z - roomCenter.z));
+                string role = edgeDistance <= 1.10f ? "PERIMETER_GUARD" : "DEPTH_GUARD";
+                yield return new TacticalEnemyCandidate(roomIndex, candidate, coverPoint, threatPoint, role,
+                    "ROOM_BOUNDARY_WALL");
+            }
+        }
+    }
+
+    private static List<TacticalEnemyCandidate> SelectCertifiedTacticalCandidates(
+        IReadOnlyDictionary<int, List<TacticalEnemyCandidate>> candidatesByRoom, int[] distancesFromSafe)
+    {
+        var selected = new List<TacticalEnemyCandidate>();
+        var selectedPerRoom = candidatesByRoom.Keys.ToDictionary(room => room, _ => 0);
+        int[] roomOrder = candidatesByRoom.Keys.OrderByDescending(room => distancesFromSafe[room])
+            .ThenBy(room => room).ToArray();
+
+        for (int pass = 0; pass < PveMinimumMarkersPerCombatRoom; pass++)
+        {
+            foreach (int room in roomOrder)
+            {
+                TacticalEnemyCandidate candidate = candidatesByRoom[room].FirstOrDefault(item =>
+                    !selected.Contains(item) && TacticalCandidateSeparated(item, selected));
+                if (candidate == null)
+                    throw new InvalidDataException("Room " + room.ToString("00") +
+                        " cannot provide the minimum separated PVE tactical marker inventory.");
+                selected.Add(candidate);
+                selectedPerRoom[room]++;
             }
         }
 
-        BuildPvpSpawnMarkers(parent, layout, roomCenters, roomSizes, connections);
+        while (selected.Count < PveAuthoredEnemyMarkerTarget)
+        {
+            bool added = false;
+            foreach (int room in roomOrder.OrderBy(room => selectedPerRoom[room]).ThenByDescending(room =>
+                         distancesFromSafe[room]).ThenBy(room => room))
+            {
+                TacticalEnemyCandidate candidate = candidatesByRoom[room].FirstOrDefault(item =>
+                    !selected.Contains(item) && TacticalCandidateSeparated(item, selected));
+                if (candidate == null) continue;
+                selected.Add(candidate);
+                selectedPerRoom[room]++;
+                added = true;
+                if (selected.Count == PveAuthoredEnemyMarkerTarget) break;
+            }
+            if (!added) break;
+        }
+        if (selected.Count < PveAuthoredEnemyMarkerTarget)
+            throw new InvalidDataException("Only " + selected.Count + " globally separated tactical enemy markers " +
+                "were available; " + PveAuthoredEnemyMarkerTarget + " are required to certify a " +
+                CertifiedPveMaximumEnemies + "-enemy PVE maximum.");
+        return selected;
+    }
+
+    private static void AddUniqueTacticalCandidate(ICollection<TacticalEnemyCandidate> candidates,
+        TacticalEnemyCandidate candidate)
+    {
+        if (candidate == null || candidates.Any(item => HorizontalDistance(item.Position, candidate.Position) < .20f))
+            return;
+        candidates.Add(candidate);
+    }
+
+    private static bool TacticalCandidateSeparated(TacticalEnemyCandidate candidate,
+        IEnumerable<TacticalEnemyCandidate> selected)
+    {
+        return selected.All(other => HorizontalDistance(candidate.Position, other.Position) >=
+                                     PveEnemySpawnPairClearance - .001f);
+    }
+
+    private static void BuildTacticalEnemyMarker(Transform parent, TacticalEnemyCandidate candidate, int markerIndex)
+    {
+        GameObject envelope = Child(parent.gameObject,
+            "TACTICAL_POSITION_" + markerIndex.ToString("00") + "_" + candidate.Role);
+        GameObject marker = Child(envelope, "PVE_EnemySpawn_" + markerIndex.ToString("00"));
+        marker.transform.position = candidate.Position;
+        Vector3 facing = candidate.ThreatPoint - candidate.Position;
+        facing.y = 0f;
+        marker.transform.rotation = facing.sqrMagnitude < .01f
+            ? Quaternion.identity
+            : Quaternion.LookRotation(facing.normalized, Vector3.up);
+        GameObject roleMarker = Child(envelope, "TACTICAL_ROLE_" + candidate.Role);
+        roleMarker.transform.position = candidate.Position;
+        GameObject coverMarker = Child(envelope,
+            "TACTICAL_COVER_POINT_" + SanitizeMarkerName(candidate.CoverLabel));
+        coverMarker.transform.position = candidate.CoverPoint;
+        GameObject threatMarker = Child(envelope,
+            "TACTICAL_THREAT_POINT_ROOM_" + candidate.RoomIndex.ToString("00"));
+        threatMarker.transform.position = new Vector3(candidate.ThreatPoint.x, 1.1f, candidate.ThreatPoint.z);
+        Child(envelope, "TACTICAL_NATIVE_BRAINAI_WANDER_RADIUS_12M").transform.position = candidate.Position;
     }
 
     private static void BuildPvpSpawnMarkers(Transform parent, Layout layout, Vector3[] roomCenters,
@@ -2201,6 +2443,21 @@ public static class KillHouseVariantBuilder
     private static float HorizontalDistance(Vector3 first, Vector3 second)
     {
         return Vector2.Distance(new Vector2(first.x, first.z), new Vector2(second.x, second.z));
+    }
+
+    private static int CountPveEnemySpawnClearanceFailures(IReadOnlyList<Transform> markers,
+        out float minimumDistance)
+    {
+        int failures = 0;
+        minimumDistance = float.PositiveInfinity;
+        for (int first = 0; first < markers.Count; first++)
+        for (int second = first + 1; second < markers.Count; second++)
+        {
+            float distance = HorizontalDistance(markers[first].position, markers[second].position);
+            minimumDistance = Mathf.Min(minimumDistance, distance);
+            if (distance < PveEnemySpawnPairClearance - .001f) failures++;
+        }
+        return failures;
     }
 
     private static Vector3 AveragePosition(IEnumerable<Vector3> positions)
@@ -3316,6 +3573,8 @@ public static class KillHouseVariantBuilder
         int enemyMarkers = enemyMarkerTransforms.Length;
         int tacticalPositions = transforms.Count(item => item.name.StartsWith("TACTICAL_POSITION_", StringComparison.Ordinal));
         int invalidTacticalMarkers = enemyMarkerTransforms.Count(marker => !TacticalMarkerValid(marker));
+        int invalidPveEnemySpawnPairClearance = CountPveEnemySpawnClearanceFailures(enemyMarkerTransforms,
+            out float minimumPveEnemySpawnSeparation);
         string tacticalFailureSummary = string.Join(",", enemyMarkerTransforms
             .Select(TacticalMarkerFailure).Where(failure => !string.IsNullOrEmpty(failure))
             .GroupBy(failure => failure).OrderBy(group => group.Key, StringComparer.Ordinal)
@@ -3626,8 +3885,17 @@ public static class KillHouseVariantBuilder
         int darkRooms = lightHolders.Count(item => item.name.EndsWith("_STATE_DARK", StringComparison.Ordinal));
         int safeRoomLit = lightHolders.Count(item => item.name.StartsWith("ROOM_LIGHT_00_SAFE_", StringComparison.Ordinal) &&
             item.name.EndsWith("_STATE_LIT", StringComparison.Ordinal));
-        int invalidFixtureLights = fixtureLights.Count(light => !FixtureLightValid(light));
-        int invalidFixtureVisuals = fixtureVisuals.Count(item => !FixtureVisualValid(item));
+        Collider[] warehouseRoofColliders = FindWarehouseRoofColliders(warehouseShell);
+        int invalidFixtureLights = fixtureLights.Count(light => !FixtureLightValid(light, warehouseRoofColliders));
+        int invalidFixtureVisuals = fixtureVisuals.Count(item => !FixtureVisualValid(item, warehouseRoofColliders));
+        float[] fixtureRoofGaps = fixtureVisuals.Select(item =>
+        {
+            return TryFixtureRoofGap(item, warehouseRoofColliders, out float gap, out _) ? gap : float.NaN;
+        }).ToArray();
+        float minimumFixtureRoofGap = fixtureRoofGaps.Length == 0 || fixtureRoofGaps.Any(value => !float.IsFinite(value))
+            ? float.NaN : fixtureRoofGaps.Min();
+        float maximumFixtureRoofGap = fixtureRoofGaps.Length == 0 || fixtureRoofGaps.Any(value => !float.IsFinite(value))
+            ? float.NaN : fixtureRoofGaps.Max();
         Volume[] volumes = root.GetComponentsInChildren<Volume>(true);
         bool indoorVolumeValid = volumes.Length == 1 && IndoorVolumeValid(volumes[0]);
         int distinctTypes = layout.Rooms.Skip(1).Distinct().Count();
@@ -3655,7 +3923,8 @@ public static class KillHouseVariantBuilder
                       doorSockets >= 6 && doorShells == doorSockets && doorAudioBanks == 1 &&
                       misalignedDoorSockets == 0 &&
                       staticDoorLeaves == 0 && openings >= 5 && windows >= 4 &&
-                      enemyMarkers >= 36 && tacticalPositions == enemyMarkers && invalidTacticalMarkers == 0 &&
+                       enemyMarkers == PveAuthoredEnemyMarkerTarget && tacticalPositions == enemyMarkers &&
+                       invalidTacticalMarkers == 0 && invalidPveEnemySpawnPairClearance == 0 &&
                       tacticalRoleTypes >= 3 && playerMarkers == 4 &&
                       pvpTeam1Markers.Length == PvpSpawnsPerTeam &&
                       pvpTeam2Markers.Length == PvpSpawnsPerTeam && invalidPvpSpawnMarkers == 0 &&
@@ -3704,6 +3973,8 @@ public static class KillHouseVariantBuilder
                 ", misalignedDoors=" + misalignedDoorSockets +
                 ", opens=" + openings + ", windows=" + windows + ", enemies=" + enemyMarkers +
                 ", tacticalPositions=" + tacticalPositions + ", invalidTactical=" + invalidTacticalMarkers +
+                ", invalidPvePairClearance=" + invalidPveEnemySpawnPairClearance +
+                ", minimumPveSeparation=" + minimumPveEnemySpawnSeparation.ToString("F3") +
                 ", tacticalFailures=" + tacticalFailureSummary + ", tacticalRoleTypes=" + tacticalRoleTypes +
                 ", pvePlayerSpawns=" + playerMarkers + ", pvpSpawns=" + pvpTeam1Markers.Length + "/" +
                 pvpTeam2Markers.Length + ", pvpRooms=" + string.Join("|", pvpTeam1Rooms) + "/" +
@@ -3782,7 +4053,7 @@ public static class KillHouseVariantBuilder
                 ", avgConnector=" + averageConnector.ToString("F1") + ".");
         return new JObject
         {
-            ["schema"] = "vektor-killhouse/scene-validation@18",
+            ["schema"] = "vektor-killhouse/scene-validation@19",
             ["generatedUtc"] = DateTime.UtcNow.ToString("O"),
             ["variantId"] = variant.Id,
             ["variantIndex"] = variantIndex + 1,
@@ -3966,6 +4237,10 @@ public static class KillHouseVariantBuilder
             ["enemySpawnMarkers"] = enemyMarkers,
             ["tacticalEnemyPositions"] = tacticalPositions,
             ["invalidTacticalEnemyPositions"] = invalidTacticalMarkers,
+            ["invalidPveEnemySpawnPairClearance"] = invalidPveEnemySpawnPairClearance,
+            ["minimumPveEnemySpawnSeparationMeters"] = minimumPveEnemySpawnSeparation,
+            ["certifiedPveMaximumEnemies"] = CertifiedPveMaximumEnemies,
+            ["authoredPveEnemyMarkerTarget"] = PveAuthoredEnemyMarkerTarget,
             ["tacticalEnemyFailureSummary"] = tacticalFailureSummary,
             ["distinctTacticalRoleTypes"] = tacticalRoleTypes,
             ["tacticalEnemyContract"] = "native-cover-backed-and-facing-likely-ingress-plus-12m-vanilla-wander-profile",
@@ -4023,6 +4298,10 @@ public static class KillHouseVariantBuilder
             ["expectedFixtureSpotLights"] = expectedFixtureLights,
             ["fluorescentFixtureVisuals"] = fixtureVisuals.Length,
             ["invalidFluorescentFixtureVisuals"] = invalidFixtureVisuals,
+            ["fixtureRoofMountGapMeters"] = WarehouseFixtureRoofGap,
+            ["minimumFixtureRoofGapMeters"] = minimumFixtureRoofGap,
+            ["maximumFixtureRoofGapMeters"] = maximumFixtureRoofGap,
+            ["fixtureLightDropBelowTopMeters"] = WarehouseFixtureLightDrop,
             ["fluorescentLitEmission"] = KillHouseNativeMaterialBuilder.KillHouseFluorescentLitEmission,
             ["fluorescentDimEmission"] = KillHouseNativeMaterialBuilder.KillHouseFluorescentDimEmission,
             ["fluorescentExposureWeight"] = KillHouseNativeMaterialBuilder.KillHouseFluorescentExposureWeight,
@@ -4189,7 +4468,7 @@ public static class KillHouseVariantBuilder
         Directory.CreateDirectory(Path.GetDirectoryName(path));
         JObject document = new JObject
         {
-            ["schema"] = "vektor-killhouse/aggregate-scene-validation@18",
+            ["schema"] = "vektor-killhouse/aggregate-scene-validation@19",
             ["generatedUtc"] = DateTime.UtcNow.ToString("O"),
             ["sceneCount"] = reports.Count,
             ["uniqueCycleCount"] = reports.Select(item => item.Value<string>("cycleMoves")).Distinct().Count(),
@@ -4197,7 +4476,14 @@ public static class KillHouseVariantBuilder
             ["uniquePortalPatternCount"] = reports.Select(item => item.Value<string>("cyclePortalPattern")).Distinct().Count(),
             ["uniqueSpatialMotifCount"] = reports.Select(item => item.Value<string>("spatialMotif")).Distinct().Count(),
             ["allPassed"] = reports.All(item => item.Value<bool>("passed")) &&
-                            reports.All(item => item.Value<int>("nativeFurnitureRenderers") >= 12 &&
+                             reports.All(item => item.Value<int>("nativeFurnitureRenderers") >= 12 &&
+                                                item.Value<int>("enemySpawnMarkers") ==
+                                                PveAuthoredEnemyMarkerTarget &&
+                                                item.Value<int>("invalidPveEnemySpawnPairClearance") == 0 &&
+                                                item.Value<float>("minimumPveEnemySpawnSeparationMeters") >=
+                                                PveEnemySpawnPairClearance - .001f &&
+                                                item.Value<int>("certifiedPveMaximumEnemies") ==
+                                                CertifiedPveMaximumEnemies &&
                                                 item.Value<int>("nativeFurnitureMeshFamilies") >= 10 &&
                                                 item.Value<int>("invalidFurnitureTextureClosures") == 0 &&
                                                 item.Value<int>("centerRoomTableProps") >= 1 &&

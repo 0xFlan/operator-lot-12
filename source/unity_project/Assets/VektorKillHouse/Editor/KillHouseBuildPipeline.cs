@@ -30,5 +30,25 @@ public static class KillHouseBuildPipeline
             EditorApplication.Exit(1);
         }
     }
+
+    public static void RebuildScenesAndBundlesBatch()
+    {
+        try
+        {
+            // Scene-only source changes reuse the already validated native
+            // mesh/material/prefab library. Rebuild all ten scenes and both
+            // proof bundles without reimporting the proprietary source asset
+            // closure or mutating any installed game file.
+            KillHouseVariantBuilder.BuildAll();
+            KillHouseBundleBuilder.Build();
+            Debug.Log("[Vektor Kill House] Ten-scene and bundle-only rebuild completed.");
+            EditorApplication.Exit(0);
+        }
+        catch (System.Exception exception)
+        {
+            Debug.LogException(exception);
+            EditorApplication.Exit(1);
+        }
+    }
 }
 #endif

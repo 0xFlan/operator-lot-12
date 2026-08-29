@@ -12,6 +12,7 @@ using BepInEx.Unity.IL2CPP;
 using Il2CppInterop.Runtime;
 using Il2CppInterop.Runtime.Injection;
 using Il2CppInterop.Runtime.InteropTypes.Arrays;
+using OperatorModAPI;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.Rendering;
@@ -33,12 +34,13 @@ using RVOSimulator = Pathfinding.RVO.RVOSimulator;
 namespace OperatorKillHouse;
 
 [BepInPlugin(PluginGuid, PluginName, PluginVersion)]
-[BepInDependency("operator.modded-operations", "0.3.29")]
+[BepInDependency("operator.modded-operations", "0.3.30")]
+[BepInDependency("operator.modapi", "0.2.0-alpha.7")]
 public sealed class OperatorKillHousePlugin : BasePlugin
 {
     public const string PluginGuid = "operator.vektor-killhouse";
     public const string PluginName = "LOT 12: FALSE WALL";
-    public const string PluginVersion = "0.1.16";
+    public const string PluginVersion = "0.1.18";
 
     private const string ExactUnityVersion = "6000.3.8f1";
     private const float IndoorFlashlightMultiplier = 6f;
@@ -73,6 +75,9 @@ public sealed class OperatorKillHousePlugin : BasePlugin
     private const string FailureMarkerName = "RUNTIME_VEKTOR_KILLHOUSE_GATE_FAILED";
     private const string ModdedOperationsReadyMarkerName = "MODDED_OPERATIONS_RUNTIME_CONTRACT_READY";
     private const string ModdedOperationsFailureMarkerName = "MODDED_OPERATIONS_RUNTIME_CONTRACT_FAILED";
+    private const int CertifiedPveMaximumEnemies = 60;
+    private const int MinimumAuthoredPveEnemyMarkers = 72;
+    private const float MinimumPveMarkerPlanarSeparationMeters = 2f;
     private const string DoorShellName = "NATIVE_DOORV2_SHELL";
     private const string DoorAudioBankName = "NATIVE_DOORV2_AUDIO_BANK";
     private const int NativeOpaqueRenderQueue = 2225;
@@ -80,7 +85,8 @@ public sealed class OperatorKillHousePlugin : BasePlugin
     private const float DoorHingeToLeafCenter = .50283f;
     private const float DoorCenterTolerance = .035f;
     private const float WarehouseRoofHeight = 11.35f;
-    private const float WarehouseFixtureHeight = 6.8f;
+    private const float WarehouseFixtureRoofGap = .04f;
+    private const float WarehouseFixtureLightDrop = .18f;
     private const float WarehouseGroundElevation = -.015f;
     private const float WarehouseGroundSourceWidth = 5.425254f;
     private const float WarehouseGroundSourceDepth = 4.129904f;
@@ -90,6 +96,8 @@ public sealed class OperatorKillHousePlugin : BasePlugin
     private const float CenterRoomFurnitureWallInset = .82f;
     private const float CenterRoomTacticalCapsuleRadius = .3f;
     private const int ApplyDelayFrames = 2;
+    private const int NavigationTeardownAuditRetryCadenceFrames = 15;
+    private const int NavigationTeardownAuditHardDeadlineFrames = 900;
     private const int OpticIdentityProbeFrames = 120;
     private const uint OfficialDoorV2AssetId = 3964291274u;
     private static readonly string[] ExactDonorShaderPasses =
@@ -99,7 +107,7 @@ public sealed class OperatorKillHousePlugin : BasePlugin
     };
     private static readonly string[] ExactDonorOverrideTags = { "MotionVector" };
 
-    private static readonly HashSet<string> ScenePaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    private static readonly HashSet<string> ScenePaths = new HashSet<string>(StringComparer.Ordinal)
     {
         "Assets/VektorKillHouse/Scenes/KH01_CircuitHouse.unity",
         "Assets/VektorKillHouse/Scenes/KH02_OffsetFigureEight.unity",
@@ -286,6 +294,21 @@ public sealed class OperatorKillHousePlugin : BasePlugin
             ["UnityPlayer.dll"] = new FileFingerprint(35734960, "D935627D3AC843293F1C51EE9D85538191F0CB98DEF4271C1A29302B52A021D4")
         };
 
+    private enum RuntimeContractState
+    {
+        None,
+        Pending,
+        Ready,
+        Failed
+    }
+
+    private enum NavigationTeardownAuditResult
+    {
+        Passed,
+        Survivors,
+        Ambiguous
+    }
+
     private readonly Dictionary<int, Material> runtimeMaterialsBySourceInstance = new Dictionary<int, Material>();
     private readonly HashSet<int> ownedRuntimeMaterialIds = new HashSet<int>();
     private readonly Dictionary<int, SuspendedDirectionalLight> suspendedDirectionalLights =
@@ -296,6 +319,12 @@ public sealed class OperatorKillHousePlugin : BasePlugin
     private UnityAction<Scene> sceneUnloadedCallback;
     private int pendingSceneHandle;
     private int applyNotBeforeFrame = -1;
+    private RuntimeContractState runtimeContractState;
+    private int runtimeContractSceneHandle;
+    private GameObject ownedRuntimeReadyMarker;
+    private GameObject ownedFrameworkReadyMarker;
+    private GameObject ownedRuntimeFailureMarker;
+    private GameObject ownedFrameworkFailureMarker;
     private GridGraph runtimeNavigationGraph;
     private AstarPath runtimeNavigationAstar;
     private GameObject runtimeAstarHost;
@@ -305,14 +334,30 @@ public sealed class OperatorKillHousePlugin : BasePlugin
     private int runtimeNavigationAstarHostInstanceId;
     private int runtimeNavigationRvoInstanceId;
     private bool runtimeOwnsRvoSimulator;
-    private int pendingNavigationTeardownAuditFrame = -1;
+    private bool runtimeNavigationAstarHostReferenceCaptured;
+    private bool runtimeNavigationRvoReferenceCaptured;
+    private long pendingNavigationTeardownAuditFrame = -1;
     private int navigationTeardownSceneHandle;
     private int navigationTeardownAstarHostInstanceId;
     private int navigationTeardownRvoInstanceId;
     private bool navigationTeardownOwnedAstarHost;
     private bool navigationTeardownOwnedRvoSimulator;
     private bool navigationTeardownHadRuntimeGraph;
+    private GridGraph navigationTeardownRuntimeGraph;
+    private GameObject navigationTeardownAstarHost;
+    private RVOSimulator navigationTeardownRvoSimulator;
+    private bool navigationTeardownRuntimeGraphReferenceCaptured;
+    private bool navigationTeardownAstarHostReferenceCaptured;
+    private bool navigationTeardownRvoReferenceCaptured;
+    private int navigationTeardownAuditAttempts;
+    private long navigationTeardownAuditStartedFrame = -1;
+    private long navigationTeardownAuditDeadlineFrame = -1;
+    private long navigationTeardownAuditGeneration;
+    private long navigationTeardownAuditGenerationCounter;
+    private string navigationTeardownAuditLastDetail = string.Empty;
+    private string runtimeContractFailurePublicationErrors = string.Empty;
     private bool exactEnvironmentAccepted;
+    private bool lifecycleStopping;
     private bool residentDoorAuditLogged;
     private bool aiSightOcclusionPending;
     private bool aiSightOcclusionPassed;
@@ -531,6 +576,20 @@ public sealed class OperatorKillHousePlugin : BasePlugin
 
     public override void Load()
     {
+        lifecycleStopping = false;
+        string requiredLoader =
+#if MELONLOADER
+            "melonloader";
+#else
+            "bepinex";
+#endif
+        if (!string.Equals(OperatorApi.LoaderKind, requiredLoader, StringComparison.Ordinal))
+        {
+            Log.LogError("Kill House refused the duplicate or missing loader host; Core owner=" +
+                OperatorApi.LoaderKind + ", required=" + requiredLoader + ".");
+            return;
+        }
+
         log = Log;
         exactEnvironmentAccepted = VerifyExactEnvironment();
         if (!exactEnvironmentAccepted)
@@ -539,7 +598,11 @@ public sealed class OperatorKillHousePlugin : BasePlugin
             return;
         }
 
-        ClassInjector.RegisterTypeInIl2Cpp<KillHouseUpdateDriver>();
+        RuntimeTypeRegistrationResult typeRegistration =
+            OperatorApi.RegisterIl2CppType(typeof(KillHouseUpdateDriver));
+        if (typeRegistration is not RuntimeTypeRegistrationResult.Registered and
+            not RuntimeTypeRegistrationResult.AlreadyRegistered)
+            throw new InvalidOperationException("Kill House driver IL2CPP registration failed: " + typeRegistration + ".");
         KillHouseUpdateDriver.Tick = OnDriverTick;
         driverObject = new GameObject("MOD_VektorKillHouse_ExactSceneRuntime");
         UnityEngine.Object.DontDestroyOnLoad(driverObject);
@@ -563,13 +626,39 @@ public sealed class OperatorKillHousePlugin : BasePlugin
 
     public override bool Unload()
     {
-        try
+        lifecycleStopping = true;
+        exactEnvironmentAccepted = false;
+        var failures = new List<string>();
+        bool globalFlashlightRestored = globalFlashlightMultiplier == null;
+        AttemptUnloadStep("runtime-ready-marker", () =>
+            RetireOwnedRuntimeContractMarker(ref ownedRuntimeReadyMarker, "plugin_unload"), failures);
+        AttemptUnloadStep("framework-ready-marker", () =>
+            RetireOwnedRuntimeContractMarker(ref ownedFrameworkReadyMarker, "plugin_unload"), failures);
+        AttemptUnloadStep("runtime-contract-failure-wins", () =>
         {
-            if (sceneLoadedCallback != null) SceneManager.sceneLoaded -= sceneLoadedCallback;
-            if (sceneUnloadedCallback != null) SceneManager.sceneUnloaded -= sceneUnloadedCallback;
+            if (runtimeContractSceneHandle == 0 ||
+                runtimeContractState is RuntimeContractState.None or RuntimeContractState.Failed) return;
+            Scene contractScene = FindLoadedSceneByHandle(runtimeContractSceneHandle);
+            GameObject contractRoot = contractScene.IsValid() && contractScene.isLoaded
+                ? FindOwnedRoot(contractScene)
+                : null;
+            MarkFailure(contractScene, contractRoot, "plugin-unload");
+        }, failures);
+        AttemptUnloadStep("scene-loaded-callback", () =>
+        {
+            if (sceneLoadedCallback == null) return;
+            SceneManager.sceneLoaded -= sceneLoadedCallback;
             sceneLoadedCallback = null;
+        }, failures);
+        AttemptUnloadStep("scene-unloaded-callback", () =>
+        {
+            if (sceneUnloadedCallback == null) return;
+            SceneManager.sceneUnloaded -= sceneUnloadedCallback;
             sceneUnloadedCallback = null;
-            KillHouseUpdateDriver.Tick = null;
+        }, failures);
+        AttemptUnloadStep("update-driver-callback", () => KillHouseUpdateDriver.Tick = null, failures);
+        AttemptUnloadStep("pending-runtime-state", () =>
+        {
             pendingSceneHandle = 0;
             applyNotBeforeFrame = -1;
             aiSightOcclusionPending = false;
@@ -578,28 +667,112 @@ public sealed class OperatorKillHousePlugin : BasePlugin
             nextOpticIdentityProbeFrame = -1;
             equippedWeaponIdentityFingerprint = 0;
             equippedWeaponIdentityInitialized = false;
-            pendingNavigationTeardownAuditFrame = -1;
-            navigationTeardownSceneHandle = 0;
-            navigationTeardownAstarHostInstanceId = 0;
-            navigationTeardownRvoInstanceId = 0;
-            navigationTeardownOwnedAstarHost = false;
-            navigationTeardownOwnedRvoSimulator = false;
-            navigationTeardownHadRuntimeGraph = false;
-            RestoreWarehouseOnlyLighting();
-            RestoreWeaponIlluminationBoosts();
-            RestoreGlobalFlashlightMultiplier();
-            ReleaseRuntimeNavigation("plugin unload");
-            ReleaseOwnedMaterials();
-            if (driverObject != null) UnityEngine.Object.Destroy(driverObject);
+        }, failures);
+        AttemptUnloadStep("warehouse-lighting", RestoreWarehouseOnlyLighting, failures);
+        AttemptUnloadStep("weapon-illumination", () => RestoreWeaponIlluminationBoosts(true), failures);
+        AttemptUnloadStep("global-flashlight", () =>
+        {
+            RestoreGlobalFlashlightMultiplierStrict();
+            globalFlashlightRestored = true;
+        }, failures);
+        AttemptUnloadStep("runtime-navigation", () =>
+        {
+            if (!HasNavigationTeardownSnapshot() && HasRuntimeNavigationOwnership())
+            {
+                if (runtimeNavigationOwnerSceneHandle == 0 ||
+                    !ArmNavigationTeardownAudit(runtimeNavigationOwnerSceneHandle))
+                    throw new InvalidOperationException(
+                        "owned navigation cannot be given an exact unload-audit generation");
+            }
+
+            bool immediateRelease = ReleaseRuntimeNavigation("plugin unload");
+            if (HasNavigationTeardownSnapshot())
+            {
+                NavigationTeardownAuditResult auditResult = CompleteNavigationTeardownAudit();
+                if (auditResult == NavigationTeardownAuditResult.Passed &&
+                    !HasNavigationTeardownSnapshot()) return;
+                throw new InvalidOperationException("post-unload navigation absence remains " +
+                                                    auditResult.ToString().ToLowerInvariant());
+            }
+            if (!immediateRelease)
+                throw new InvalidOperationException("owned navigation state remains after release attempt");
+        }, failures);
+        AttemptUnloadStep("runtime-materials", ReleaseOwnedMaterials, failures);
+        AttemptUnloadStep("driver-object", () =>
+        {
+            if (globalFlashlightMultiplier != null && !globalFlashlightRestored)
+                throw new InvalidOperationException("global flashlight baseline was not restored");
+            if (driverObject != null)
+            {
+                driverObject.SetActive(false);
+                UnityEngine.Object.Destroy(driverObject);
+            }
             driverObject = null;
-            exactEnvironmentAccepted = false;
-            return true;
+            globalFlashlightMultiplier = null;
+        }, failures);
+        AttemptUnloadStep("runtime-failure-marker", () =>
+            RetireOwnedRuntimeContractMarker(ref ownedRuntimeFailureMarker, "plugin_unload"), failures);
+        AttemptUnloadStep("framework-failure-marker", () =>
+            RetireOwnedRuntimeContractMarker(ref ownedFrameworkFailureMarker, "plugin_unload"), failures);
+        AttemptUnloadStep("runtime-contract-state", () =>
+        {
+            runtimeContractSceneHandle = 0;
+            runtimeContractState = RuntimeContractState.None;
+            runtimeContractFailurePublicationErrors = string.Empty;
+        }, failures);
+        string[] residues = DescribeUnloadResidues();
+        bool passed = failures.Count == 0 && residues.Length == 0;
+        string message = "Vektor Kill House unload: passed=" + passed +
+                         ", failures=[" + string.Join(" | ", failures) + "]" +
+                         ", residues=[" + string.Join(" | ", residues) + "].";
+        if (passed) log?.LogInfo(message);
+        else log?.LogError(message);
+        return passed;
+    }
+
+    private void AttemptUnloadStep(string name, Action step, List<string> failures)
+    {
+        try
+        {
+            step();
         }
         catch (Exception exception)
         {
-            log?.LogError("Vektor Kill House unload failed: " + exception);
-            return false;
+            failures.Add(name + "=" + exception.GetType().Name + ":" + exception.Message);
+            log?.LogError("Vektor Kill House unload step failed: step=" + name + ", exception=" + exception + ".");
         }
+    }
+
+    private string[] DescribeUnloadResidues()
+    {
+        var residues = new List<string>();
+        if (ownedRuntimeReadyMarker != null) residues.Add("runtime-ready-marker");
+        if (ownedFrameworkReadyMarker != null) residues.Add("framework-ready-marker");
+        if (ownedRuntimeFailureMarker != null) residues.Add("runtime-failure-marker");
+        if (ownedFrameworkFailureMarker != null) residues.Add("framework-failure-marker");
+        if (runtimeContractSceneHandle != 0 || runtimeContractState != RuntimeContractState.None)
+            residues.Add("runtime-contract-state");
+        if (sceneLoadedCallback != null) residues.Add("scene-loaded-callback");
+        if (sceneUnloadedCallback != null) residues.Add("scene-unloaded-callback");
+        if (KillHouseUpdateDriver.Tick != null) residues.Add("update-driver-callback");
+        if (driverObject != null) residues.Add("driver-object");
+        if (runtimeNavigationGraph != null) residues.Add("navigation-graph");
+        if (runtimeNavigationAstar != null) residues.Add("navigation-astar");
+        if (runtimeAstarHost != null || runtimeOwnsAstarHost) residues.Add("navigation-astar-host");
+        if (runtimeRvoSimulator != null || runtimeOwnsRvoSimulator) residues.Add("navigation-rvo");
+        if (HasNavigationTeardownSnapshot()) residues.Add("navigation-teardown-audit");
+        if (runtimeMaterialsBySourceInstance.Count != 0 || ownedRuntimeMaterialIds.Count != 0)
+            residues.Add("runtime-materials");
+        if (suspendedDirectionalLights.Count != 0 || warehouseEnvironmentOverrideApplied)
+            residues.Add("warehouse-lighting");
+        if (hwsReticleBoostStates.Count != 0 || hwsReticleSizeStates.Count != 0 ||
+            visibleIrLaserBoostStates.Count != 0 || visibleLaserLightBoostStates.Count != 0 ||
+            boostedLaserBeamStates.Count != 0)
+            residues.Add("weapon-illumination");
+        if (globalFlashlightMultiplier != null) residues.Add("global-flashlight");
+        if (pendingSceneHandle != 0 || applyNotBeforeFrame != -1 || aiSightOcclusionPending || opticAuditPending)
+            residues.Add("pending-runtime-state");
+        return residues.ToArray();
     }
 
     private bool VerifyExactEnvironment()
@@ -631,12 +804,176 @@ public sealed class OperatorKillHousePlugin : BasePlugin
         return true;
     }
 
+    private bool BeginRuntimeContractGeneration(Scene scene)
+    {
+        if (runtimeContractSceneHandle == scene.handle && runtimeContractState != RuntimeContractState.None)
+            return runtimeContractState != RuntimeContractState.Failed;
+
+        RetireOwnedRuntimeContractMarkers("replacement");
+        runtimeContractSceneHandle = scene.handle;
+        runtimeContractState = RuntimeContractState.Pending;
+        runtimeContractFailurePublicationErrors = string.Empty;
+
+        GameObject root = FindOwnedRoot(scene);
+        Transform[] reserved = FindRuntimeContractMarkers(scene);
+        if (reserved.Length == 0) return true;
+
+        foreach (Transform marker in reserved.Where(item =>
+                     string.Equals(item.name, ReadyMarkerName, StringComparison.Ordinal) ||
+                     string.Equals(item.name, ModdedOperationsReadyMarkerName, StringComparison.Ordinal)))
+        {
+            marker.name = "REJECTED_PREEXISTING_" + marker.name;
+            marker.gameObject.SetActive(false);
+        }
+        MarkFailure(scene, root, "preexisting-runtime-contract-markers=" + reserved.Length);
+        return false;
+    }
+
+    private static Transform[] FindRuntimeContractMarkers(Scene scene)
+    {
+        if (!scene.IsValid() || !scene.isLoaded) return Array.Empty<Transform>();
+        var markers = new List<Transform>();
+        foreach (GameObject sceneRoot in scene.GetRootGameObjects())
+        {
+            if (sceneRoot == null) continue;
+            foreach (Transform item in sceneRoot.GetComponentsInChildren<Transform>(true))
+            {
+                if (string.Equals(item.name, ReadyMarkerName, StringComparison.Ordinal) ||
+                    string.Equals(item.name, FailureMarkerName, StringComparison.Ordinal) ||
+                    string.Equals(item.name, ModdedOperationsReadyMarkerName, StringComparison.Ordinal) ||
+                    string.Equals(item.name, ModdedOperationsFailureMarkerName, StringComparison.Ordinal))
+                    markers.Add(item);
+            }
+        }
+        return markers.ToArray();
+    }
+
+    private static GameObject CreateRuntimeContractMarker(Scene scene, GameObject root, string name)
+    {
+        var marker = new GameObject(name);
+        if (root != null) marker.transform.SetParent(root.transform, false);
+        else SceneManager.MoveGameObjectToScene(marker, scene);
+        return marker;
+    }
+
+    private static void RetireOwnedRuntimeContractMarker(ref GameObject marker, string reason)
+    {
+        GameObject owned = marker;
+        if (owned == null)
+        {
+            marker = null;
+            return;
+        }
+        if (!owned.name.StartsWith("RETIRED_", StringComparison.Ordinal))
+            owned.name = "RETIRED_" + reason + "_" + owned.name;
+        owned.SetActive(false);
+        UnityEngine.Object.Destroy(owned);
+        marker = null;
+    }
+
+    private void RetireOwnedRuntimeContractMarkers(string reason)
+    {
+        RetireOwnedRuntimeContractMarker(ref ownedFrameworkFailureMarker, reason);
+        RetireOwnedRuntimeContractMarker(ref ownedRuntimeFailureMarker, reason);
+        RetireOwnedRuntimeContractMarker(ref ownedFrameworkReadyMarker, reason);
+        RetireOwnedRuntimeContractMarker(ref ownedRuntimeReadyMarker, reason);
+        runtimeContractSceneHandle = 0;
+        runtimeContractState = RuntimeContractState.None;
+        runtimeContractFailurePublicationErrors = string.Empty;
+    }
+
+    private void ForgetRuntimeContractGeneration(int sceneHandle)
+    {
+        if (runtimeContractSceneHandle != sceneHandle) return;
+        ownedRuntimeReadyMarker = null;
+        ownedFrameworkReadyMarker = null;
+        ownedRuntimeFailureMarker = null;
+        ownedFrameworkFailureMarker = null;
+        runtimeContractSceneHandle = 0;
+        runtimeContractState = RuntimeContractState.None;
+        runtimeContractFailurePublicationErrors = string.Empty;
+    }
+
+    private bool PublishRuntimeContractReady(Scene scene, GameObject root)
+    {
+        if (runtimeContractSceneHandle != scene.handle ||
+            runtimeContractState != RuntimeContractState.Pending)
+        {
+            MarkFailure(scene, root, "runtime-contract-state=" + runtimeContractState +
+                                     "/owner=" + runtimeContractSceneHandle);
+            return false;
+        }
+
+        Transform[] preexisting = FindRuntimeContractMarkers(scene);
+        if (preexisting.Length != 0)
+        {
+            MarkFailure(scene, root, "runtime-contract-marker-race=" + preexisting.Length);
+            return false;
+        }
+
+        try
+        {
+            ownedRuntimeReadyMarker = CreateRuntimeContractMarker(scene, root, ReadyMarkerName);
+            ownedFrameworkReadyMarker = CreateRuntimeContractMarker(scene, root,
+                ModdedOperationsReadyMarkerName);
+            runtimeContractState = RuntimeContractState.Ready;
+            return true;
+        }
+        catch (Exception exception)
+        {
+            MarkFailure(scene, root, "runtime-contract-ready-exception=" + exception.GetType().Name);
+            return false;
+        }
+    }
+
+    private bool EnforceRuntimeContractFailureWins()
+    {
+        if (runtimeContractState is RuntimeContractState.None or RuntimeContractState.Failed ||
+            runtimeContractSceneHandle == 0) return runtimeContractState != RuntimeContractState.Failed;
+        Scene scene = FindLoadedSceneByHandle(runtimeContractSceneHandle);
+        if (!scene.IsValid() || !scene.isLoaded) return true;
+        Transform[] markers = FindRuntimeContractMarkers(scene);
+        bool failurePresent = markers.Any(item =>
+            string.Equals(item.name, FailureMarkerName, StringComparison.Ordinal) ||
+            string.Equals(item.name, ModdedOperationsFailureMarkerName, StringComparison.Ordinal));
+        GameObject root = FindOwnedRoot(scene);
+        if (failurePresent)
+        {
+            MarkFailure(scene, root, "runtime-contract-failure-marker-observed");
+            return false;
+        }
+        if (runtimeContractState != RuntimeContractState.Ready) return true;
+
+        int runtimeReady = markers.Count(item =>
+            string.Equals(item.name, ReadyMarkerName, StringComparison.Ordinal));
+        int frameworkReady = markers.Count(item =>
+            string.Equals(item.name, ModdedOperationsReadyMarkerName, StringComparison.Ordinal));
+        if (runtimeReady == 1 && frameworkReady == 1 && ownedRuntimeReadyMarker != null &&
+            ownedFrameworkReadyMarker != null) return true;
+        MarkFailure(scene, root, "runtime-contract-ready-marker-lost-or-duplicated=" +
+                                 runtimeReady + "/" + frameworkReady);
+        return false;
+    }
+
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
+        if (lifecycleStopping || !exactEnvironmentAccepted) return;
         if (!IsKillHouseScene(scene)) return;
+        if (pendingSceneHandle == scene.handle && runtimeContractSceneHandle == scene.handle &&
+            runtimeContractState != RuntimeContractState.None)
+        {
+            log.LogWarning("Vektor Kill House ignored a duplicate scene-loaded callback for handle=" +
+                           scene.handle + ", state=" + runtimeContractState + ".");
+            return;
+        }
+        int supersededSceneHandle = pendingSceneHandle != 0 && pendingSceneHandle != scene.handle
+            ? pendingSceneHandle
+            : 0;
         // Restart Operation can reload the pinned variant before every old-scene
         // callback has completed. Restore exact baselines before arming a new generation.
+        if (supersededSceneHandle != 0) RestoreWarehouseOnlyLighting();
         RestoreWeaponIlluminationBoosts();
+        if (supersededSceneHandle != 0) RestoreGlobalFlashlightMultiplier();
         pendingSceneHandle = scene.handle;
         applyNotBeforeFrame = Time.frameCount + ApplyDelayFrames;
         aiSightOcclusionPending = false;
@@ -648,12 +985,59 @@ public sealed class OperatorKillHousePlugin : BasePlugin
         equippedWeaponIdentityFingerprint = 0;
         equippedWeaponIdentityInitialized = false;
         lastOpticAuditSignature = string.Empty;
+        if (!BeginRuntimeContractGeneration(scene))
+        {
+            applyNotBeforeFrame = -1;
+            aiSightOcclusionPending = false;
+            opticAuditPending = false;
+            nextOpticIdentityProbeFrame = -1;
+            return;
+        }
+        bool staleNavigationGeneration = runtimeNavigationOwnerSceneHandle != 0 &&
+                                         runtimeNavigationOwnerSceneHandle != scene.handle;
+        if (staleNavigationGeneration)
+        {
+            int staleOwner = runtimeNavigationOwnerSceneHandle;
+            if (!ArmNavigationTeardownAudit(staleOwner))
+            {
+                MarkFailure(scene, FindOwnedRoot(scene),
+                    "conflicting-navigation-teardown-owner=" + staleOwner);
+                return;
+            }
+            bool immediateNavigationRelease =
+                ReleaseRuntimeNavigation("replacement kill-house scene takeover");
+            if (!immediateNavigationRelease)
+                log.LogWarning("Vektor Kill House replacement generation is awaiting the exact " +
+                               "post-unload navigation absence proof for owner=" + staleOwner + ".");
+        }
+        else if (HasNavigationTeardownSnapshot() && pendingNavigationTeardownAuditFrame < 0 &&
+                 !ArmNavigationTeardownAudit(navigationTeardownSceneHandle))
+        {
+            MarkFailure(scene, FindOwnedRoot(scene), "navigation-teardown-audit-could-not-resume");
+            return;
+        }
+        if (supersededSceneHandle != 0 || staleNavigationGeneration)
+        {
+            try
+            {
+                ReleaseOwnedMaterials();
+            }
+            catch (Exception exception)
+            {
+                MarkFailure(scene, FindOwnedRoot(scene),
+                    "stale-runtime-material-release=" + exception.GetType().Name);
+                return;
+            }
+        }
         log.LogInfo("Vektor Kill House variant observed: path=" + scene.path + ", mode=" + mode +
-                    ", applyFrame=" + applyNotBeforeFrame + ".");
+                    ", applyFrame=" + applyNotBeforeFrame +
+                    ", navigationAuditPending=" + HasNavigationTeardownSnapshot() + ".");
     }
 
     private void OnSceneUnloaded(Scene scene)
     {
+        if (lifecycleStopping) return;
+        ForgetRuntimeContractGeneration(scene.handle);
         if (scene.handle != pendingSceneHandle)
         {
             // Restart may report the replacement sceneLoaded callback before the prior sceneUnloaded
@@ -662,10 +1046,12 @@ public sealed class OperatorKillHousePlugin : BasePlugin
             if (scene.handle == runtimeNavigationOwnerSceneHandle)
             {
                 ArmNavigationTeardownAudit(scene.handle);
-                ReleaseRuntimeNavigation("superseded kill-house scene unload");
+                bool navigationReleased = ReleaseRuntimeNavigation("superseded kill-house scene unload");
                 ReleaseOwnedMaterials();
-                log.LogInfo("Vektor Kill House superseded generation released without disturbing replacement handle=" +
-                            pendingSceneHandle + ".");
+                string message = "Vektor Kill House superseded generation teardown: passed=" +
+                                 navigationReleased + ", replacementHandle=" + pendingSceneHandle + ".";
+                if (navigationReleased) log.LogInfo(message);
+                else log.LogError(message);
             }
             return;
         }
@@ -682,19 +1068,62 @@ public sealed class OperatorKillHousePlugin : BasePlugin
         RestoreWarehouseOnlyLighting();
         RestoreWeaponIlluminationBoosts();
         RestoreGlobalFlashlightMultiplier();
-        ReleaseRuntimeNavigation("kill-house scene unload");
+        bool navigationReleasedForUnload = ReleaseRuntimeNavigation("kill-house scene unload");
         ReleaseOwnedMaterials();
-        log.LogInfo("Vektor Kill House variant unloaded; scene-owned runtime state released.");
+        if (navigationReleasedForUnload)
+        {
+            log.LogInfo("Vektor Kill House scene teardown: passed=True, deferred=False, sceneHandle=" +
+                        scene.handle + ".");
+        }
+        else if (HasNavigationTeardownSnapshot())
+        {
+            // Unity destroys the scene-owned Astar/RVO objects at end of frame. A retained
+            // absence-proof snapshot is expected here and is resolved by OnDriverTick; it is
+            // neither a teardown failure nor a reason to reject the replacement generation.
+            log.LogInfo("Vektor Kill House scene teardown: passed=pending, deferred=True, sceneHandle=" +
+                        scene.handle + ".");
+        }
+        else
+        {
+            log.LogError("Vektor Kill House scene teardown: passed=False, deferred=False, sceneHandle=" +
+                         scene.handle + ".");
+        }
     }
 
     private void OnDriverTick()
     {
         if (!exactEnvironmentAccepted) return;
+        bool runtimeContractAllowsProgress = EnforceRuntimeContractFailureWins();
         if (pendingNavigationTeardownAuditFrame >= 0)
         {
-            if (Time.frameCount < pendingNavigationTeardownAuditFrame) return;
-            CompleteNavigationTeardownAudit();
+            long currentFrame = Time.frameCount;
+            if (currentFrame < pendingNavigationTeardownAuditFrame) return;
+            NavigationTeardownAuditResult auditResult = CompleteNavigationTeardownAudit();
+            if (auditResult != NavigationTeardownAuditResult.Passed)
+            {
+                if (currentFrame < navigationTeardownAuditDeadlineFrame)
+                {
+                    pendingNavigationTeardownAuditFrame = Math.Min(
+                        currentFrame + NavigationTeardownAuditRetryCadenceFrames,
+                        navigationTeardownAuditDeadlineFrame);
+                    return;
+                }
+
+                pendingNavigationTeardownAuditFrame = -1;
+                if (pendingSceneHandle != 0)
+                {
+                    Scene scene = FindLoadedSceneByHandle(pendingSceneHandle);
+                    GameObject root = scene.IsValid() && scene.isLoaded ? FindOwnedRoot(scene) : null;
+                    MarkFailure(scene, root, "navigation-teardown-" +
+                                               auditResult.ToString().ToLowerInvariant() + "=" +
+                                               navigationTeardownAuditLastDetail +
+                                               "/generation=" + navigationTeardownAuditGeneration +
+                                               "/deadlineFrame=" + navigationTeardownAuditDeadlineFrame);
+                }
+                return;
+            }
         }
+        if (!runtimeContractAllowsProgress || HasNavigationTeardownSnapshot()) return;
         if (pendingSceneHandle == 0 ||
             (applyNotBeforeFrame < 0 && !aiSightOcclusionPending && !opticAuditPending &&
              nextOpticIdentityProbeFrame < 0)) return;
@@ -703,7 +1132,17 @@ public sealed class OperatorKillHousePlugin : BasePlugin
         if (applyNotBeforeFrame >= 0 && Time.frameCount >= applyNotBeforeFrame)
         {
             applyNotBeforeFrame = -1;
-            ApplyRuntimeContract();
+            try
+            {
+                ApplyRuntimeContract();
+            }
+            catch (Exception exception)
+            {
+                Scene scene = FindLoadedSceneByHandle(pendingSceneHandle);
+                GameObject root = scene.IsValid() && scene.isLoaded ? FindOwnedRoot(scene) : null;
+                log.LogError("Vektor Kill House runtime gate threw before readiness: " + exception);
+                MarkFailure(scene, root, "runtime-contract-exception=" + exception.GetType().Name);
+            }
         }
         if (aiSightOcclusionPending && Time.frameCount >= nextAiSightAuditFrame)
         {
@@ -745,43 +1184,49 @@ public sealed class OperatorKillHousePlugin : BasePlugin
         }
         bool warehouseOnlyLightingPassed = ApplyWarehouseOnlyLighting(root);
         bool renderPassed = EnsureIndoorRenderContract(root);
-        bool lightingPassed = warehouseOnlyLightingPassed && renderPassed && ValidateIndoorLighting(root);
+        bool fixtureMountsPassed = RepairIndoorFixtureRoofMounts(root);
+        bool lightingPassed = warehouseOnlyLightingPassed && renderPassed && fixtureMountsPassed &&
+                              ValidateIndoorLighting(root);
         bool doorsPassed = lightingPassed && EnsureNativeDoorV2Runtime(root);
         bool materialsPassed = doorsPassed && RebindSceneMaterials(root);
         bool sightPassed = false;
         bool sightDeferred = false;
         if (materialsPassed) sightPassed = ValidateAiSightOcclusion(root, out sightDeferred);
-        bool navigationPassed = materialsPassed && (sightPassed || sightDeferred) && EnsureRuntimeNavigationGraph(root);
+        int preparedTacticalEnemyMarkers = 0;
+        bool tacticalPreparationPassed = materialsPassed && (sightPassed || sightDeferred) &&
+            ValidateTacticalEnemyPlacement(root, true, out preparedTacticalEnemyMarkers, out _);
+        bool navigationPassed = tacticalPreparationPassed && EnsureRuntimeNavigationGraph(root);
+        bool playerSpawnContractPassed = navigationPassed && ValidateRuntimePlayerSpawnAndColliderContract(root);
         int tacticalEnemyMarkers = 0;
-        bool tacticalEnemyPlacementPassed = navigationPassed &&
-                                             ValidateTacticalEnemyPlacement(root, out tacticalEnemyMarkers);
+        int certifiedSafeCapacity = 0;
+        bool tacticalEnemyPlacementPassed = playerSpawnContractPassed &&
+            ValidateTacticalEnemyPlacement(root, false, out tacticalEnemyMarkers, out certifiedSafeCapacity) &&
+            tacticalEnemyMarkers == preparedTacticalEnemyMarkers;
         if (!warehouseOnlyLightingPassed || !renderPassed || !lightingPassed || !doorsPassed || !materialsPassed ||
             (!sightPassed && !sightDeferred) ||
-            !navigationPassed || !tacticalEnemyPlacementPassed)
+            !tacticalPreparationPassed || !navigationPassed || !playerSpawnContractPassed ||
+            !tacticalEnemyPlacementPassed)
         {
-            MarkFailure(scene, root, !warehouseOnlyLightingPassed ? "warehouse-light-isolation" :
-                (!renderPassed ? "indoor-render-contract" : (!lightingPassed ? "indoor-lighting" :
-                    (!doorsPassed ? "doorv2-reconstruction" : (!materialsPassed ? "material-rebind" :
-                        ((!sightPassed && !sightDeferred) ? "ai-sight-occlusion" :
-                            (!navigationPassed ? "navigation" : "tactical-enemy-placement")))))));
+            string failureReason = !warehouseOnlyLightingPassed ? "warehouse-light-isolation" :
+                !renderPassed ? "indoor-render-contract" :
+                !lightingPassed ? "indoor-lighting" :
+                !doorsPassed ? "doorv2-reconstruction" :
+                !materialsPassed ? "material-rebind" :
+                (!sightPassed && !sightDeferred) ? "ai-sight-occlusion" :
+                !tacticalPreparationPassed ? "tactical-enemy-preparation" :
+                !navigationPassed ? "navigation" :
+                !playerSpawnContractPassed ? "player-spawn-collider-contract" : "tactical-enemy-post-snap";
+            MarkFailure(scene, root, failureReason);
             return;
         }
         aiSightOcclusionPassed = sightPassed;
         aiSightOcclusionPending = sightDeferred;
         if (sightDeferred) nextAiSightAuditFrame = Time.frameCount + 30;
-        if (root.transform.Find(ReadyMarkerName) == null)
-        {
-            GameObject marker = new GameObject(ReadyMarkerName);
-            marker.transform.SetParent(root.transform, false);
-        }
-        if (root.transform.Find(ModdedOperationsReadyMarkerName) == null)
-        {
-            GameObject marker = new GameObject(ModdedOperationsReadyMarkerName);
-            marker.transform.SetParent(root.transform, false);
-        }
+        if (!PublishRuntimeContractReady(scene, root)) return;
         log.LogInfo("Vektor Kill House runtime gate passed: scene=" + scene.name +
                     ", nativeOnly=true, fullDoorV2=true, stateAwareFixtureLighting=true, vanillaIndoorRender=true, fixedSafeRoom=true, tacticalEnemyPositions=" +
                     tacticalEnemyMarkers + "/" + tacticalEnemyMarkers +
+                    ", certifiedSafeEnemyCapacity=" + certifiedSafeCapacity +
                     ", vanillaIdleBehavior=Wander12m, frameworkInitialResponseDelay=3-6s, aiSightOcclusion=" +
                     (sightPassed ? "passed" : "deferred-until-resident-ai") + ".");
     }
@@ -916,6 +1361,15 @@ public sealed class OperatorKillHousePlugin : BasePlugin
         }
     }
 
+    private void RestoreGlobalFlashlightMultiplierStrict()
+    {
+        if (globalFlashlightMultiplier == null) return;
+        globalFlashlightMultiplier.MultiplierValue = 1f;
+        globalFlashlightMultiplier.UpdateFlashLightMultiplier();
+        if (Mathf.Abs(globalFlashlightMultiplier.MultiplierValue - 1f) > .001f)
+            throw new InvalidOperationException("global flashlight multiplier did not return to its baseline");
+    }
+
     private bool ApplyWarehouseOnlyLighting(GameObject root)
     {
         try
@@ -997,6 +1451,75 @@ public sealed class OperatorKillHousePlugin : BasePlugin
         return result.ToArray();
     }
 
+    private bool RepairIndoorFixtureRoofMounts(GameObject root)
+    {
+        Transform lightingRoot = root == null ? null : root.transform.Find("70_LIGHTING");
+        Transform warehouseRoof = root == null ? null : root.transform.Find(
+            "05_HIGH_WAREHOUSE_SHELL/NATIVE_WarehousePvpCompleteShell/NATIVE_WarehouseRoof");
+        Collider[] roofColliders = warehouseRoof == null ? Array.Empty<Collider>() :
+            warehouseRoof.GetComponentsInChildren<Collider>(true)
+                .Where(collider => collider != null && collider.enabled && !collider.isTrigger).ToArray();
+        Transform[] fixtures = lightingRoot == null ? Array.Empty<Transform>() :
+            lightingRoot.GetComponentsInChildren<Transform>(true)
+                .Where(item => item.name.StartsWith("NATIVE_Lamp_fluorescent_B_", StringComparison.Ordinal))
+                .ToArray();
+        if (roofColliders.Length == 0 || fixtures.Length == 0)
+        {
+            log.LogError("Vektor Kill House fixture roof-mount preparation failed: roofColliders=" +
+                roofColliders.Length + ", fixtures=" + fixtures.Length + ".");
+            return false;
+        }
+
+        int repaired = 0;
+        int invalid = 0;
+        float maximumDisplacement = 0f;
+        foreach (Transform fixture in fixtures)
+        {
+            if (!TryRuntimeFixtureRoofGap(fixture, roofColliders, out float existingGap,
+                    out float existingTop) ||
+                existingGap < -WarehouseFixtureRoofGap || existingGap > WarehouseRoofHeight)
+            {
+                invalid++;
+                continue;
+            }
+            float displacement = existingGap - WarehouseFixtureRoofGap;
+            if (Mathf.Abs(displacement) > .001f)
+            {
+                fixture.position += Vector3.up * displacement;
+                repaired++;
+                maximumDisplacement = Mathf.Max(maximumDisplacement, Mathf.Abs(displacement));
+            }
+
+            string suffix = fixture.name.Substring("NATIVE_Lamp_fluorescent_B_".Length);
+            Transform holder = fixture.parent;
+            Light light = holder == null ? null : holder.GetComponentsInChildren<Light>(true)
+                .FirstOrDefault(item => string.Equals(item.name,
+                    "ROOM_LOCAL_FIXTURE_LIGHT_" + suffix, StringComparison.Ordinal));
+            if (light == null)
+            {
+                invalid++;
+                continue;
+            }
+            float fixtureTop = existingTop + displacement;
+            light.transform.position = new Vector3(
+                light.transform.position.x,
+                fixtureTop - WarehouseFixtureLightDrop,
+                light.transform.position.z);
+        }
+        Physics.SyncTransforms();
+
+        int postInvalid = fixtures.Count(fixture =>
+            !TryRuntimeFixtureRoofGap(fixture, roofColliders, out float gap, out _) ||
+            Mathf.Abs(gap - WarehouseFixtureRoofGap) > .015f);
+        bool passed = invalid == 0 && postInvalid == 0;
+        log.LogInfo("Vektor Kill House fixture roof-mount preparation: passed=" + passed +
+            ", fixtures=" + fixtures.Length + ", repaired=" + repaired +
+            ", invalid=" + invalid + ", postInvalid=" + postInvalid +
+            ", targetGap=" + WarehouseFixtureRoofGap.ToString("F3", CultureInfo.InvariantCulture) +
+            ", maximumDisplacement=" + maximumDisplacement.ToString("F3", CultureInfo.InvariantCulture) + ".");
+        return passed;
+    }
+
     private bool ValidateIndoorLighting(GameObject root)
     {
         Light[] lights = root.GetComponentsInChildren<Light>(true);
@@ -1004,6 +1527,15 @@ public sealed class OperatorKillHousePlugin : BasePlugin
         Light[] local = lights.Where(light => light.name.StartsWith("ROOM_LOCAL_FIXTURE_LIGHT_", StringComparison.Ordinal)).ToArray();
         Transform roomsRoot = root.transform.Find("10_ROOMS");
         Transform lightingRoot = root.transform.Find("70_LIGHTING");
+        Transform warehouseRoof = root.transform.Find(
+            "05_HIGH_WAREHOUSE_SHELL/NATIVE_WarehousePvpCompleteShell/NATIVE_WarehouseRoof");
+        Collider[] warehouseRoofColliders = warehouseRoof == null ? Array.Empty<Collider>() :
+            warehouseRoof.GetComponentsInChildren<Collider>(true)
+                .Where(collider => collider != null && collider.enabled && !collider.isTrigger).ToArray();
+        Transform[] fixtureVisuals = lightingRoot == null ? Array.Empty<Transform>() :
+            lightingRoot.GetComponentsInChildren<Transform>(true)
+                .Where(item => item.name.StartsWith("NATIVE_Lamp_fluorescent_B_", StringComparison.Ordinal))
+                .ToArray();
         int roomCount = roomsRoot == null ? 0 : roomsRoot.childCount;
         Transform[] roomLightHolders = lightingRoot == null ? Array.Empty<Transform>() :
             Enumerable.Range(0, lightingRoot.childCount).Select(lightingRoot.GetChild)
@@ -1074,8 +1606,10 @@ public sealed class OperatorKillHousePlugin : BasePlugin
             data.legacyLight == null || !localFixtureLightIds.Contains(data.legacyLight.GetInstanceID()) ||
             data.gameObject != data.legacyLight.gameObject);
         int invalidFixtureLights = 0;
+        int invalidFixtureMounts = 0;
         int pairedFixtureHdrpData = 0;
         int duplicateFixtureHdrpData = 0;
+        var fixtureRoofGaps = new List<float>();
         List<string> invalidSamples = new List<string>();
         foreach (Light light in local)
         {
@@ -1086,6 +1620,20 @@ public sealed class OperatorKillHousePlugin : BasePlugin
             HDAdditionalLightData hd = pairedData.Length == 1 ? pairedData[0] : null;
             float mapLocalY = root.transform.InverseTransformPoint(light.transform.position).y;
             string holderName = light.transform.parent == null ? string.Empty : light.transform.parent.name;
+            string suffix = light.name.Substring("ROOM_LOCAL_FIXTURE_LIGHT_".Length);
+            Transform fixture = light.transform.parent == null ? null :
+                light.transform.parent.GetComponentsInChildren<Transform>(true)
+                    .FirstOrDefault(item => string.Equals(item.name,
+                        "NATIVE_Lamp_fluorescent_B_" + suffix, StringComparison.Ordinal));
+            bool fixtureMountValid = TryRuntimeFixtureRoofGap(
+                    fixture,
+                    warehouseRoofColliders,
+                    out float fixtureRoofGap,
+                    out float fixtureTop) &&
+                Mathf.Abs(fixtureRoofGap - WarehouseFixtureRoofGap) <= .015f &&
+                Mathf.Abs((fixtureTop - light.transform.position.y) - WarehouseFixtureLightDrop) <= .015f;
+            if (float.IsFinite(fixtureRoofGap)) fixtureRoofGaps.Add(fixtureRoofGap);
+            if (!fixtureMountValid) invalidFixtureMounts++;
             bool stateValid = holderName.EndsWith("_STATE_LIT", StringComparison.Ordinal)
                 ? light.enabled && hd != null && hd.intensity >= 1050f && hd.intensity <= 1450f
                 : holderName.EndsWith("_STATE_DIM", StringComparison.Ordinal)
@@ -1093,11 +1641,11 @@ public sealed class OperatorKillHousePlugin : BasePlugin
                     : holderName.EndsWith("_STATE_DARK", StringComparison.Ordinal) && !light.enabled &&
                       hd != null && hd.intensity <= .001f;
             bool valid = pairedLights.Length == 1 && pairedLights[0] == light && pairedData.Length == 1 &&
-                         hd != null && hd.enabled && hd.gameObject == light.gameObject &&
-                         hd.legacyLight != null && hd.legacyLight == light &&
-                         stateValid && light.type == LightType.Spot && light.shadows == LightShadows.Soft &&
-                         mapLocalY >= WarehouseFixtureHeight - .25f && mapLocalY <= WarehouseFixtureHeight - .1f &&
-                         light.range >= 11f && light.spotAngle >= 56f && light.spotAngle <= 60f &&
+                          hd != null && hd.enabled && hd.gameObject == light.gameObject &&
+                          hd.legacyLight != null && hd.legacyLight == light &&
+                          stateValid && light.type == LightType.Spot && light.shadows == LightShadows.Soft &&
+                          fixtureMountValid &&
+                          light.range >= 11f && light.spotAngle >= 56f && light.spotAngle <= 60f &&
                          light.useColorTemperature && light.colorTemperature >= 4200f &&
                          light.colorTemperature <= 4400f && hd != null && hd.lightUnit == LightUnit.Lumen &&
                          hd.range >= 11f;
@@ -1105,6 +1653,10 @@ public sealed class OperatorKillHousePlugin : BasePlugin
             invalidFixtureLights++;
             if (invalidSamples.Count < 4)
                 invalidSamples.Add(light.name + "{mapY=" + mapLocalY.ToString("F2", CultureInfo.InvariantCulture) +
+                                   ",roofGap=" + (float.IsFinite(fixtureRoofGap)
+                                       ? fixtureRoofGap.ToString("F3", CultureInfo.InvariantCulture) : "missing") +
+                                   ",fixtureTop=" + (float.IsFinite(fixtureTop)
+                                       ? fixtureTop.ToString("F3", CultureInfo.InvariantCulture) : "missing") +
                                    ",enabled=" + light.enabled + ",type=" + light.type +
                                    ",shadows=" + light.shadows + ",range=" +
                                    light.range.ToString("F2", CultureInfo.InvariantCulture) +
@@ -1127,6 +1679,8 @@ public sealed class OperatorKillHousePlugin : BasePlugin
                                             RenderSettings.ambientIntensity <= .001f &&
                                             RenderSettings.reflectionIntensity <= .001f;
         bool localContract = local.Length >= roomCount && invalidFixtureLights == 0 &&
+                             fixtureVisuals.Length == local.Length && invalidFixtureMounts == 0 &&
+                             warehouseRoofColliders.Length > 0 && fixtureRoofGaps.Count == local.Length &&
                              pairedFixtureHdrpData == local.Length && duplicateFixtureHdrpData == 0 &&
                              fixtureTreeHdrpData.Length == local.Length && orphanFixtureHdrpData == 0 &&
                              roomLightHolders.Length == roomCount && litSafeRooms == 1 &&
@@ -1142,7 +1696,13 @@ public sealed class OperatorKillHousePlugin : BasePlugin
                     ", roomSpaces=" + roomCount + ", fixtureLights=" + local.Length +
                     ", roomLightStates=lit:" + litRooms + "/dim:" + dimRooms + "/dark:" + darkRooms +
                     ", litSafeRooms=" + litSafeRooms +
-                    ", invalidFixtures=" + invalidFixtureLights + ", hdrpDataAdded=" + addedHdrpData +
+                    ", invalidFixtures=" + invalidFixtureLights +
+                    ", invalidFixtureMounts=" + invalidFixtureMounts +
+                    ", fixtureRoofGap=" + (fixtureRoofGaps.Count == 0 ? "missing" :
+                        fixtureRoofGaps.Min().ToString("F3", CultureInfo.InvariantCulture) + ".." +
+                        fixtureRoofGaps.Max().ToString("F3", CultureInfo.InvariantCulture)) +
+                    ", roofColliders=" + warehouseRoofColliders.Length +
+                    ", hdrpDataAdded=" + addedHdrpData +
                     ", pairedFixtureHdrpData=" + pairedFixtureHdrpData +
                     ", duplicateFixtureHdrpData=" + duplicateFixtureHdrpData +
                     ", fixtureTreeHdrpData=" + fixtureTreeHdrpData.Length +
@@ -1158,11 +1718,62 @@ public sealed class OperatorKillHousePlugin : BasePlugin
         return passed;
     }
 
-    private bool ValidateTacticalEnemyPlacement(GameObject root, out int markerCount)
+    private static bool TryRuntimeFixtureRoofGap(Transform fixture, Collider[] roofColliders,
+        out float gap, out float fixtureTop)
+    {
+        gap = float.NaN;
+        fixtureTop = float.NaN;
+        if (fixture == null || roofColliders == null || roofColliders.Length == 0 ||
+            !TryRuntimeRendererBounds(fixture.gameObject, out Bounds bounds))
+            return false;
+        fixtureTop = bounds.max.y;
+        float minX = bounds.min.x;
+        float maxX = bounds.max.x;
+        float minZ = bounds.min.z;
+        float maxZ = bounds.max.z;
+        Vector2[] samples =
+        {
+            new Vector2(bounds.center.x, bounds.center.z),
+            new Vector2(minX, minZ), new Vector2(minX, maxZ),
+            new Vector2(maxX, minZ), new Vector2(maxX, maxZ),
+            new Vector2(minX, bounds.center.z), new Vector2(maxX, bounds.center.z),
+            new Vector2(bounds.center.x, minZ), new Vector2(bounds.center.x, maxZ)
+        };
+        float lowest = float.PositiveInfinity;
+        foreach (Vector2 sample in samples)
+        {
+            if (!TryRuntimeWarehouseRoofSurface(roofColliders, sample.x, sample.y, out float surface))
+                return false;
+            if (surface < lowest) lowest = surface;
+        }
+        gap = lowest - fixtureTop;
+        return float.IsFinite(gap);
+    }
+
+    private static bool TryRuntimeWarehouseRoofSurface(Collider[] roofColliders, float worldX,
+        float worldZ, out float surfaceY)
+    {
+        surfaceY = float.NaN;
+        Ray ray = new Ray(new Vector3(worldX, WarehouseRoofHeight + 1f, worldZ), Vector3.down);
+        float nearestDistance = float.PositiveInfinity;
+        foreach (Collider collider in roofColliders)
+        {
+            if (collider != null && collider.Raycast(ray, out RaycastHit hit, WarehouseRoofHeight + 3f) &&
+                hit.distance < nearestDistance)
+                nearestDistance = hit.distance;
+        }
+        if (!float.IsFinite(nearestDistance)) return false;
+        surfaceY = ray.origin.y - nearestDistance;
+        return float.IsFinite(surfaceY);
+    }
+
+    private bool ValidateTacticalEnemyPlacement(GameObject root, bool allowRepair, out int markerCount,
+        out int certifiedSafeCapacity)
     {
         Transform[] markers = root.GetComponentsInChildren<Transform>(true)
             .Where(item => item.name.StartsWith("PVE_EnemySpawn_", StringComparison.Ordinal)).ToArray();
         markerCount = markers.Length;
+        certifiedSafeCapacity = 0;
         int valid = 0;
         int repaired = 0;
         var roles = new HashSet<string>(StringComparer.Ordinal);
@@ -1177,7 +1788,7 @@ public sealed class OperatorKillHousePlugin : BasePlugin
             Transform profile = FindDirectChild(envelope, "TACTICAL_NATIVE_BRAINAI_WANDER_RADIUS_12M");
             if (role == null || cover == null || threat == null || profile == null) continue;
             roles.Add(role.name);
-            if (TryRepairRuntimeTacticalStandingPosition(marker, role, cover, threat)) repaired++;
+            if (allowRepair && TryRepairRuntimeTacticalStandingPosition(marker, role, cover, threat)) repaired++;
 
             Vector3 toThreat = threat.position - marker.position;
             toThreat.y = 0f;
@@ -1220,14 +1831,142 @@ public sealed class OperatorKillHousePlugin : BasePlugin
 
         int tacticalPositions = root.GetComponentsInChildren<Transform>(true)
             .Count(item => item.name.StartsWith("TACTICAL_POSITION_", StringComparison.Ordinal));
-        bool passed = markerCount >= 36 && tacticalPositions == markerCount && valid == markerCount && roles.Count >= 3;
+        int uniqueMarkerNames = markers.Select(item => item.name).Distinct(StringComparer.Ordinal).Count();
+        int markersOnGraph = 0;
+        int tightlyGroundedMarkers = 0;
+        float certifiedMinimumSeparation = float.PositiveInfinity;
+        if (!allowRepair)
+        {
+            var accepted = new List<Transform>();
+            foreach (Transform marker in markers.OrderBy(item => item.name, StringComparer.Ordinal))
+            {
+                bool onGraph = runtimeNavigationAstar != null &&
+                               runtimeNavigationAstar.IsPointOnNavmesh(marker.position);
+                bool grounded = HasTightMarkerGroundSupport(marker, root.scene);
+                if (onGraph) markersOnGraph++;
+                if (grounded) tightlyGroundedMarkers++;
+                if (!onGraph || !grounded) continue;
+                if (accepted.Any(other => Vector2.Distance(
+                        new Vector2(marker.position.x, marker.position.z),
+                        new Vector2(other.position.x, other.position.z)) <
+                    MinimumPveMarkerPlanarSeparationMeters)) continue;
+                foreach (Transform other in accepted)
+                {
+                    float separation = Vector2.Distance(new Vector2(marker.position.x, marker.position.z),
+                        new Vector2(other.position.x, other.position.z));
+                    certifiedMinimumSeparation = Mathf.Min(certifiedMinimumSeparation, separation);
+                }
+                accepted.Add(marker);
+            }
+            certifiedSafeCapacity = accepted.Count;
+        }
+
+        bool finalized = allowRepair ||
+                         (uniqueMarkerNames == markerCount && markersOnGraph == markerCount &&
+                          tightlyGroundedMarkers == markerCount &&
+                          certifiedSafeCapacity >= CertifiedPveMaximumEnemies);
+        bool passed = markerCount >= MinimumAuthoredPveEnemyMarkers && tacticalPositions == markerCount &&
+                      valid == markerCount &&
+                      roles.Count >= 3 && finalized;
         log.LogInfo("Vektor Kill House tactical enemy placement: passed=" + passed +
+                    ", phase=" + (allowRepair ? "repair" : "post-snap-final") +
                     ", markers=" + markerCount + ", validCoverFacingAndClearance=" + valid +
                     ", runtimeColliderRepairs=" + repaired + ", distinctRoles=" + roles.Count +
+                    ", uniqueMarkerNames=" + uniqueMarkerNames + ", markersOnGraph=" + markersOnGraph +
+                    ", tightlyGroundedMarkers=" + tightlyGroundedMarkers +
+                    ", certifiedSafeCapacity=" + certifiedSafeCapacity + "/" + CertifiedPveMaximumEnemies +
+                    ", minimumAcceptedPlanarSeparationMeters=" +
+                    (float.IsPositiveInfinity(certifiedMinimumSeparation) ? "n/a" :
+                        certifiedMinimumSeparation.ToString("F3", CultureInfo.InvariantCulture)) +
                     ", nativeIdleBehavior=Wander, wanderRadiusMeters=12" +
                     ", comms=true, counterSuppression=true" +
                     (invalidSamples.Count == 0 ? string.Empty : ", invalidSamples=[" + string.Join(" | ", invalidSamples) + "]") + ".");
         return passed;
+    }
+
+    private static bool HasTightMarkerGroundSupport(Transform marker, Scene expectedScene)
+    {
+        if (marker == null || !expectedScene.IsValid() || !expectedScene.isLoaded) return false;
+        Vector3 origin = marker.position + Vector3.up * .18f;
+        if (!Physics.Raycast(origin, Vector3.down, out RaycastHit hit, .50f,
+                Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore)) return false;
+        Collider collider = hit.collider;
+        return collider != null && collider.enabled && !collider.isTrigger &&
+               collider.gameObject.scene.IsValid() && collider.gameObject.scene.handle == expectedScene.handle &&
+               hit.normal.y >= .65f && Mathf.Abs(marker.position.y - hit.point.y) <= .12f;
+    }
+
+    private bool ValidateRuntimePlayerSpawnAndColliderContract(GameObject root)
+    {
+        Transform[] transforms = root.GetComponentsInChildren<Transform>(true);
+        Transform[] pve = transforms.Where(item =>
+                item.name.StartsWith("PVE_PlayerSpawn_", StringComparison.Ordinal))
+            .OrderBy(item => item.name, StringComparer.Ordinal).ToArray();
+        Transform[] team1 = transforms.Where(item =>
+                item.name.StartsWith("PVP_Team1Spawn_", StringComparison.Ordinal))
+            .OrderBy(item => item.name, StringComparer.Ordinal).ToArray();
+        Transform[] team2 = transforms.Where(item =>
+                item.name.StartsWith("PVP_Team2Spawn_", StringComparison.Ordinal))
+            .OrderBy(item => item.name, StringComparer.Ordinal).ToArray();
+        Transform[] all = pve.Concat(team1).Concat(team2).ToArray();
+
+        int obstructionMask = Physics.DefaultRaycastLayers;
+        foreach (string dynamicLayerName in new[] { "LocalPlayer", "Character", "Hitbox" })
+        {
+            int dynamicLayer = LayerMask.NameToLayer(dynamicLayerName);
+            if (dynamicLayer >= 0) obstructionMask &= ~(1 << dynamicLayer);
+        }
+
+        int finite = all.Count(marker => MarkerTransformIsFinite(marker));
+        int grounded = all.Count(marker => HasTightMarkerGroundSupport(marker, root.scene));
+        int capsuleClear = all.Count(marker => Physics.OverlapCapsule(
+            marker.position + Vector3.up * .42f, marker.position + Vector3.up * 1.58f, .30f,
+            obstructionMask, QueryTriggerInteraction.Ignore).Length == 0);
+        bool exactNames = pve.Select(item => item.name).SequenceEqual(
+                              Enumerable.Range(1, 4).Select(index =>
+                                  "PVE_PlayerSpawn_" + index.ToString("00", CultureInfo.InvariantCulture))) &&
+                          team1.Select(item => item.name).SequenceEqual(
+                              Enumerable.Range(1, 6).Select(index =>
+                                  "PVP_Team1Spawn_" + index.ToString("00", CultureInfo.InvariantCulture))) &&
+                          team2.Select(item => item.name).SequenceEqual(
+                              Enumerable.Range(1, 6).Select(index =>
+                                  "PVP_Team2Spawn_" + index.ToString("00", CultureInfo.InvariantCulture)));
+        bool teamSpacing = MinimumPairwisePlanarSeparation(team1) >= 1.5f &&
+                           MinimumPairwisePlanarSeparation(team2) >= 1.5f;
+        bool passed = pve.Length == 4 && team1.Length == 6 && team2.Length == 6 && exactNames &&
+                      finite == all.Length && grounded == all.Length && capsuleClear == all.Length && teamSpacing;
+        log.LogInfo("Vektor Kill House player-spawn collider gate: passed=" + passed +
+                    ", counts=" + pve.Length + "/" + team1.Length + "/" + team2.Length +
+                    ", exactNames=" + exactNames + ", finite=" + finite + "/" + all.Length +
+                    ", grounded=" + grounded + "/" + all.Length + ", capsuleClear=" + capsuleClear +
+                    "/" + all.Length + ", teamSpacing=" + teamSpacing + ".");
+        return passed;
+    }
+
+    private static bool MarkerTransformIsFinite(Transform marker)
+    {
+        if (marker == null) return false;
+        Vector3 position = marker.position;
+        Quaternion rotation = marker.rotation;
+        return !(float.IsNaN(position.x) || float.IsInfinity(position.x) ||
+                 float.IsNaN(position.y) || float.IsInfinity(position.y) ||
+                 float.IsNaN(position.z) || float.IsInfinity(position.z) ||
+                 float.IsNaN(rotation.x) || float.IsInfinity(rotation.x) ||
+                 float.IsNaN(rotation.y) || float.IsInfinity(rotation.y) ||
+                 float.IsNaN(rotation.z) || float.IsInfinity(rotation.z) ||
+                 float.IsNaN(rotation.w) || float.IsInfinity(rotation.w));
+    }
+
+    private static float MinimumPairwisePlanarSeparation(IReadOnlyList<Transform> markers)
+    {
+        if (markers.Count < 2) return float.PositiveInfinity;
+        float minimum = float.PositiveInfinity;
+        for (int first = 0; first < markers.Count; first++)
+        for (int second = first + 1; second < markers.Count; second++)
+            minimum = Mathf.Min(minimum, Vector2.Distance(
+                new Vector2(markers[first].position.x, markers[first].position.z),
+                new Vector2(markers[second].position.x, markers[second].position.z)));
+        return minimum;
     }
 
     private static bool TryRepairRuntimeTacticalStandingPosition(Transform marker, Transform role, Transform cover,
@@ -2013,8 +2752,15 @@ public sealed class OperatorKillHousePlugin : BasePlugin
         float warehouseRoofElevation = warehouseRoofRenderer == null
             ? float.NaN
             : root.transform.InverseTransformPoint(warehouseRoofRenderer.bounds.max).y;
-        BoxCollider exfil = exfils.Length == 1 ? exfils[0].GetComponent<BoxCollider>() : null;
-        int expectedEnemies = (roomFloors - 1) * 2;
+        BoxCollider[] exfilColliders = exfils.Length == 1
+            ? exfils[0].GetComponents<BoxCollider>()
+            : Array.Empty<BoxCollider>();
+        BoxCollider exfil = exfilColliders.Length == 1 ? exfilColliders[0] : null;
+        bool exfilValid = exfil != null && exfil.enabled && exfil.isTrigger &&
+                          exfil.size.x > .01f && exfil.size.y > .01f && exfil.size.z > .01f &&
+                          MarkerTransformIsFinite(exfils[0]) &&
+                          exfil.gameObject.scene.handle == root.scene.handle;
+        int expectedEnemies = MinimumAuthoredPveEnemyMarkers;
         bool furniturePlacementValid = ValidateRuntimeFurniturePlacement(root, out int wallBackedFurniture,
             out int furnitureProvenanceMarkers, out int forbiddenFurniture, out int invalidFurniturePlacement,
             out int missingWallFurnitureFamilies, out int overlappingFurniture, out int blockedFurniturePortals,
@@ -2024,7 +2770,7 @@ public sealed class OperatorKillHousePlugin : BasePlugin
         bool passed = mapMarkers == 1 && pveSpawnSetMarkers == 1 && pvpSpawnSetMarkers == 1 && safeRooms == 1 &&
                       players == 4 && pvpTeam1Players == 6 && pvpTeam2Players == 6 &&
                       roomFloors >= 19 && roomFloors <= 21 && enemies == expectedEnemies &&
-                      exfils.Length == 1 && exfil != null && exfil.isTrigger && roomCeilings == 0 &&
+                       exfils.Length == 1 && exfilColliders.Length == 1 && exfilValid && roomCeilings == 0 &&
                       connectorFloors >= 1 && connectorFloors <= 32 && connectorCeilings == 0 && warehouseShellGroups == 1 &&
                        warehouseParts.Length == 4 && warehouseMeshColliders == 4 &&
                        warehouseGrounds.Length == 1 && warehouseGroundValid &&
@@ -2038,7 +2784,8 @@ public sealed class OperatorKillHousePlugin : BasePlugin
                          ", pvpSpawnSetMarkers=" + pvpSpawnSetMarkers + ", safeRooms=" + safeRooms +
                          ", pvePlayers=" + players + ", pvpTeam1Players=" + pvpTeam1Players +
                          ", pvpTeam2Players=" + pvpTeam2Players + ", enemies=" + enemies + ", exfils=" + exfils.Length +
-                         ", expectedEnemies=" + expectedEnemies + ", exfilTrigger=" + (exfil != null && exfil.isTrigger) +
+                          ", expectedEnemies=" + expectedEnemies + ", exfilColliders=" + exfilColliders.Length +
+                          ", exfilValid=" + exfilValid +
                          ", roomFloors=" + roomFloors + ", roomCeilings=" + roomCeilings +
                          ", connectorFloors=" + connectorFloors + ", connectorCeilings=" + connectorCeilings +
                          ", warehouseShellGroups=" + warehouseShellGroups +
@@ -4470,40 +5217,43 @@ public sealed class OperatorKillHousePlugin : BasePlugin
         {
             HwsReticleSizeState state = hwsReticleSizeStates[index];
             if (ReticleBelongsToEquippedWeapon(state.Owner)) continue;
-            RestoreHwsReticleSizeState(state);
+            if (!RestoreHwsReticleSizeState(state)) continue;
             hwsReticleSizeStates.RemoveAt(index);
         }
         for (int index = hwsReticleBoostStates.Count - 1; index >= 0; index--)
         {
             HwsReticleBoostState state = hwsReticleBoostStates[index];
             if (ReticleBelongsToEquippedWeapon(state.Reticle)) continue;
-            RestoreHwsReticleBrightnessState(state);
+            if (!RestoreHwsReticleBrightnessState(state)) continue;
             enhancedHwsReticles.Remove(state.Reticle == null ? 0 : state.Reticle.GetInstanceID());
             hwsReticleBoostStates.RemoveAt(index);
         }
     }
 
-    private void RestoreHwsReticleSizeState(HwsReticleSizeState state)
+    private bool RestoreHwsReticleSizeState(HwsReticleSizeState state)
     {
         try
         {
             if (state.Renderer != null && state.Renderer.sharedMaterial == state.Boosted)
                 state.Renderer.sharedMaterial = state.Original;
             if (state.Boosted != null) UnityEngine.Object.Destroy(state.Boosted);
+            enhancedHwsReticleSizeRenderers.Remove(state.Renderer == null ? 0 : state.Renderer.GetInstanceID());
+            return true;
         }
         catch (Exception exception)
         {
             log?.LogWarning("Vektor Kill House HWS size restore warning: " + exception.Message);
+            return false;
         }
-        enhancedHwsReticleSizeRenderers.Remove(state.Renderer == null ? 0 : state.Renderer.GetInstanceID());
     }
 
-    private void RestoreHwsReticleBrightnessState(HwsReticleBoostState state)
+    private bool RestoreHwsReticleBrightnessState(HwsReticleBoostState state)
     {
         try
         {
             HWSReticleBrightness reticle = state.Reticle;
-            if (reticle == null || reticle.reticleSettings == null) return;
+            if (reticle == null) return true;
+            if (reticle.reticleSettings == null) return false;
             int count = Math.Min(reticle.reticleSettings.Length, state.Normal.Length);
             for (int index = 0; index < count; index++)
             {
@@ -4513,10 +5263,12 @@ public sealed class OperatorKillHousePlugin : BasePlugin
                 setting.ReticleBrightness_NVG = state.Nvg[index];
             }
             ApplyHwsSelectedBrightness(reticle);
+            return true;
         }
         catch (Exception exception)
         {
             log?.LogWarning("Vektor Kill House HWS baseline restore warning: " + exception.Message);
+            return false;
         }
     }
 
@@ -4534,7 +5286,7 @@ public sealed class OperatorKillHousePlugin : BasePlugin
             nvg.SetFloat("_Reticle_Brightness", selected.ReticleBrightness_NVG);
     }
 
-    private void RestoreWeaponIlluminationBoosts()
+    private void RestoreWeaponIlluminationBoosts(bool requireComplete = false)
     {
         int hwsCount = hwsReticleBoostStates.Count;
         int hwsSizeCount = hwsReticleSizeStates.Count;
@@ -4544,10 +5296,11 @@ public sealed class OperatorKillHousePlugin : BasePlugin
 
         // Restore original material references before writing the selected baseline
         // brightness, otherwise the write would land on a clone that is about to be destroyed.
+        bool passed = true;
         foreach (HwsReticleSizeState state in hwsReticleSizeStates)
-            RestoreHwsReticleSizeState(state);
+            if (!RestoreHwsReticleSizeState(state)) passed = false;
         foreach (HwsReticleBoostState state in hwsReticleBoostStates)
-            RestoreHwsReticleBrightnessState(state);
+            if (!RestoreHwsReticleBrightnessState(state)) passed = false;
 
         foreach (VisibleIrLaserBoostState state in visibleIrLaserBoostStates)
         {
@@ -4563,6 +5316,7 @@ public sealed class OperatorKillHousePlugin : BasePlugin
             }
             catch (Exception exception)
             {
+                passed = false;
                 log?.LogWarning("Vektor Kill House visible-laser controller restore warning: " + exception.Message);
             }
         }
@@ -4576,8 +5330,17 @@ public sealed class OperatorKillHousePlugin : BasePlugin
             }
             catch (Exception exception)
             {
+                passed = false;
                 log?.LogWarning("Vektor Kill House visible-laser light restore warning: " + exception.Message);
             }
+        }
+
+        if (!passed)
+        {
+            const string message = "one or more weapon illumination baselines could not be restored";
+            if (requireComplete) throw new InvalidOperationException(message);
+            log?.LogWarning("Vektor Kill House " + message + "; ownership was retained for retry.");
+            return;
         }
 
         hwsReticleSizeStates.Clear();
@@ -4912,8 +5675,12 @@ public sealed class OperatorKillHousePlugin : BasePlugin
             if (runtimeRvoSimulator == null || runtimeRvoSimulator.gameObject != astarHost ||
                 !runtimeRvoSimulator.isActiveAndEnabled) return false;
 
-            ReleaseRuntimeNavigationGraph(runtimeNavigationAstar != null ? runtimeNavigationAstar : astar,
-                "graph rebuild");
+            if (!ReleaseRuntimeNavigationGraph(runtimeNavigationAstar != null ? runtimeNavigationAstar : astar,
+                    "graph rebuild"))
+            {
+                log.LogError("Vektor Kill House navigation rebuild rejected: the prior runtime graph remains attached.");
+                return false;
+            }
             Bounds bounds = floorColliders[0].bounds;
             foreach (Collider floor in floorColliders.Skip(1)) bounds.Encapsulate(floor.bounds);
             int width = Mathf.CeilToInt((bounds.size.x + 2f) / NavigationNodeSize);
@@ -4931,6 +5698,14 @@ public sealed class OperatorKillHousePlugin : BasePlugin
             runtimeNavigationOwnerSceneHandle = root.scene.handle;
             runtimeNavigationAstarHostInstanceId = astarHost == null ? 0 : astarHost.GetInstanceID();
             runtimeNavigationRvoInstanceId = runtimeRvoSimulator == null ? 0 : runtimeRvoSimulator.GetInstanceID();
+            // Capture this while the newly created Unity objects are alive. By
+            // SceneManager.sceneUnloaded, Unity's destroyed-object equality can
+            // report the retained wrapper as null even though ownership and the
+            // instance IDs were captured correctly during creation.
+            runtimeNavigationAstarHostReferenceCaptured =
+                !runtimeOwnsAstarHost || runtimeAstarHost != null;
+            runtimeNavigationRvoReferenceCaptured =
+                !runtimeOwnsRvoSimulator || runtimeRvoSimulator != null;
             graph.name = RuntimeGraphName;
             graph.center = new Vector3(bounds.center.x, bounds.min.y, bounds.center.z);
             graph.rotation = Vector3.zero;
@@ -4977,12 +5752,12 @@ public sealed class OperatorKillHousePlugin : BasePlugin
 
             Transform[] enemies = root.GetComponentsInChildren<Transform>(true)
                 .Where(item => item.name.StartsWith("PVE_EnemySpawn_", StringComparison.Ordinal)).ToArray();
-            int snapped = SnapMarkersToGrid(astar, enemies, true);
+            int snapped = SnapTacticalEnemyMarkersToGrid(graph, enemies);
             Transform[] players = root.GetComponentsInChildren<Transform>(true)
                 .Where(item => item.name.StartsWith("PVE_PlayerSpawn_", StringComparison.Ordinal)).ToArray();
             int playerMarkersOnGrid = SnapMarkersToGrid(astar, players, true);
             int enemiesOnGrid = enemies.Count(marker => astar.IsPointOnNavmesh(marker.position));
-            int expectedEnemies = (roomFloors.Length - 1) * 2;
+            int expectedEnemies = MinimumAuthoredPveEnemyMarkers;
             bool passed = enemies.Length == expectedEnemies && snapped == expectedEnemies && enemiesOnGrid == expectedEnemies &&
                            players.Length == 4 && playerMarkersOnGrid == 4;
             log.LogInfo("Vektor Kill House navigation scan: passed=" + passed + ", graph=" + graph.name +
@@ -5003,6 +5778,59 @@ public sealed class OperatorKillHousePlugin : BasePlugin
         }
     }
 
+    private static int SnapTacticalEnemyMarkersToGrid(GridGraph graph,
+        IEnumerable<Transform> markers)
+    {
+        int snapped = 0;
+        var claimed = new List<Vector3>();
+        foreach (Transform marker in markers.OrderBy(item => item.name, StringComparer.Ordinal))
+        {
+            if (marker == null) continue;
+            Transform envelope = marker.parent;
+            Transform role = envelope == null ? null : FindDirectChild(envelope, "TACTICAL_ROLE_");
+            Transform cover = envelope == null ? null : FindDirectChild(envelope, "TACTICAL_COVER_POINT_");
+            Transform threat = envelope == null ? null : FindDirectChild(envelope, "TACTICAL_THREAT_POINT_");
+            if (role == null || cover == null || threat == null) continue;
+
+            Vector3 authoredPosition = marker.position;
+            bool selected = false;
+            foreach (Vector3 candidate in WalkableGridCandidates(graph, authoredPosition))
+            {
+                if (claimed.Any(other => Vector2.Distance(
+                        new Vector2(candidate.x, candidate.z),
+                        new Vector2(other.x, other.z)) < NavigationNodeSize * .75f))
+                    continue;
+                if (!StandingCapsuleIsClear(candidate)) continue;
+                float coverDistance = Vector2.Distance(
+                    new Vector2(candidate.x, candidate.z),
+                    new Vector2(cover.position.x, cover.position.z));
+                float threatDistance = Vector2.Distance(
+                    new Vector2(candidate.x, candidate.z),
+                    new Vector2(threat.position.x, threat.position.z));
+                if (coverDistance < .15f || coverDistance > 4.50f || threatDistance < 1.15f)
+                    continue;
+
+                marker.position = candidate;
+                role.position = candidate;
+                Vector3 facing = threat.position - candidate;
+                facing.y = 0f;
+                if (facing.sqrMagnitude >= .01f)
+                    marker.rotation = Quaternion.LookRotation(facing.normalized, Vector3.up);
+                claimed.Add(candidate);
+                snapped++;
+                selected = true;
+                break;
+            }
+            if (!selected)
+            {
+                marker.position = authoredPosition;
+                role.position = authoredPosition;
+            }
+        }
+        Physics.SyncTransforms();
+        return snapped;
+    }
+
     private static int SnapMarkersToGrid(AstarPath astar, IEnumerable<Transform> markers, bool move)
     {
         int snapped = 0;
@@ -5021,27 +5849,308 @@ public sealed class OperatorKillHousePlugin : BasePlugin
         return snapped;
     }
 
-    private void ArmNavigationTeardownAudit(int unloadedSceneHandle)
+    private static IEnumerable<Vector3> WalkableGridCandidates(GridGraph graph, Vector3 origin)
     {
+        var candidates = new List<Vector3>();
+        if (graph == null) return candidates;
+        Bounds region = new Bounds(origin, new Vector3(
+            NavigationMarkerClearance * 2f,
+            4f,
+            NavigationMarkerClearance * 2f));
+        var nodes = graph.GetNodesInRegion(region);
+        if (nodes == null) return candidates;
+        for (int index = 0; index < nodes.Count; index++)
+        {
+            Pathfinding.GraphNode node = nodes[index];
+            if (node == null || !node.Walkable) continue;
+            Vector3 candidate = (Vector3)node.position + Vector3.up * .03f;
+            float horizontal = Vector2.Distance(
+                new Vector2(origin.x, origin.z),
+                new Vector2(candidate.x, candidate.z));
+            if (horizontal <= NavigationMarkerClearance)
+                candidates.Add(candidate);
+        }
+        return candidates
+            .OrderBy(candidate => Vector2.SqrMagnitude(
+                new Vector2(candidate.x - origin.x, candidate.z - origin.z)))
+            .ThenBy(candidate => candidate.x)
+            .ThenBy(candidate => candidate.z)
+            .ToArray();
+    }
+
+    private static bool StandingCapsuleIsClear(Vector3 position)
+    {
+        int obstructionMask = Physics.DefaultRaycastLayers;
+        foreach (string dynamicLayerName in new[] { "LocalPlayer", "Character", "Hitbox" })
+        {
+            int dynamicLayer = LayerMask.NameToLayer(dynamicLayerName);
+            if (dynamicLayer >= 0) obstructionMask &= ~(1 << dynamicLayer);
+        }
+        return Physics.OverlapCapsule(
+            position + Vector3.up * .42f,
+            position + Vector3.up * 1.58f,
+            .30f,
+            obstructionMask,
+            QueryTriggerInteraction.Ignore).Length == 0;
+    }
+
+    private bool HasRuntimeNavigationOwnership()
+    {
+        return runtimeNavigationGraph != null || runtimeNavigationAstar != null ||
+               runtimeAstarHost != null || runtimeRvoSimulator != null ||
+               runtimeOwnsAstarHost || runtimeOwnsRvoSimulator ||
+               runtimeNavigationAstarHostReferenceCaptured ||
+               runtimeNavigationRvoReferenceCaptured ||
+               runtimeNavigationOwnerSceneHandle != 0 || runtimeNavigationAstarHostInstanceId != 0 ||
+               runtimeNavigationRvoInstanceId != 0;
+    }
+
+    private bool HasNavigationTeardownSnapshot()
+    {
+        return pendingNavigationTeardownAuditFrame >= 0 || navigationTeardownSceneHandle != 0 ||
+               navigationTeardownAstarHostInstanceId != 0 || navigationTeardownRvoInstanceId != 0 ||
+               navigationTeardownHadRuntimeGraph || navigationTeardownRuntimeGraph != null ||
+               navigationTeardownRuntimeGraphReferenceCaptured ||
+               navigationTeardownAstarHostReferenceCaptured || navigationTeardownRvoReferenceCaptured ||
+               navigationTeardownAuditStartedFrame >= 0 || navigationTeardownAuditDeadlineFrame >= 0 ||
+               navigationTeardownAuditGeneration != 0;
+    }
+
+    private bool ArmNavigationTeardownAudit(int unloadedSceneHandle)
+    {
+        if (unloadedSceneHandle == 0)
+        {
+            navigationTeardownAuditLastDetail = "missing-owner-scene-handle";
+            try
+            {
+                log?.LogError("Vektor Kill House refused to arm a navigation teardown audit without an owner scene handle.");
+            }
+            catch
+            {
+                // Refusal remains authoritative even if logging is unavailable.
+            }
+            return false;
+        }
+
+        if (HasNavigationTeardownSnapshot())
+        {
+            if (navigationTeardownSceneHandle != unloadedSceneHandle)
+            {
+                navigationTeardownAuditLastDetail = "snapshot-owner-conflict=" +
+                                                    navigationTeardownSceneHandle + "/" + unloadedSceneHandle;
+                try
+                {
+                    log?.LogError("Vektor Kill House refused to overwrite an unresolved navigation teardown " +
+                                  "snapshot: " + navigationTeardownAuditLastDetail + ".");
+                }
+                catch
+                {
+                    // The exact prior snapshot remains retained.
+                }
+                return false;
+            }
+
+            if (navigationTeardownAuditGeneration == 0 || navigationTeardownAuditStartedFrame < 0 ||
+                navigationTeardownAuditDeadlineFrame < navigationTeardownAuditStartedFrame)
+            {
+                navigationTeardownAuditLastDetail = "snapshot-deadline-identity-invalid";
+                return false;
+            }
+
+            if (pendingNavigationTeardownAuditFrame < 0)
+            {
+                long currentFrame = Time.frameCount;
+                pendingNavigationTeardownAuditFrame = currentFrame >= navigationTeardownAuditDeadlineFrame
+                    ? currentFrame
+                    : Math.Min(currentFrame + ApplyDelayFrames, navigationTeardownAuditDeadlineFrame);
+            }
+            return true;
+        }
+
         navigationTeardownSceneHandle = unloadedSceneHandle;
         navigationTeardownAstarHostInstanceId = runtimeNavigationAstarHostInstanceId;
         navigationTeardownRvoInstanceId = runtimeNavigationRvoInstanceId;
         navigationTeardownOwnedAstarHost = runtimeOwnsAstarHost;
         navigationTeardownOwnedRvoSimulator = runtimeOwnsRvoSimulator;
         navigationTeardownHadRuntimeGraph = runtimeNavigationGraph != null;
+        navigationTeardownRuntimeGraph = runtimeNavigationGraph;
+        navigationTeardownRuntimeGraphReferenceCaptured = runtimeNavigationGraph != null;
+        navigationTeardownAstarHost = runtimeOwnsAstarHost ? runtimeAstarHost : null;
+        navigationTeardownRvoSimulator = runtimeOwnsRvoSimulator ? runtimeRvoSimulator : null;
+        navigationTeardownAstarHostReferenceCaptured =
+            !runtimeOwnsAstarHost || runtimeNavigationAstarHostReferenceCaptured;
+        navigationTeardownRvoReferenceCaptured =
+            !runtimeOwnsRvoSimulator || runtimeNavigationRvoReferenceCaptured;
+        navigationTeardownAuditAttempts = 0;
+        navigationTeardownAuditLastDetail = string.Empty;
+        long auditStartFrame = Time.frameCount;
+        if (navigationTeardownAuditGenerationCounter == long.MaxValue)
+        {
+            navigationTeardownAuditLastDetail = "audit-generation-overflow";
+            return false;
+        }
+        navigationTeardownAuditGenerationCounter++;
+        navigationTeardownAuditGeneration = navigationTeardownAuditGenerationCounter;
+        navigationTeardownAuditStartedFrame = auditStartFrame;
+        navigationTeardownAuditDeadlineFrame =
+            auditStartFrame + NavigationTeardownAuditHardDeadlineFrames;
         // Destroy is end-of-frame. Two frames lets Unity finish scene-owned destruction while
         // still running before a replacement generation's delayed runtime contract.
-        pendingNavigationTeardownAuditFrame = Time.frameCount + 2;
+        pendingNavigationTeardownAuditFrame = auditStartFrame + ApplyDelayFrames;
+        return true;
     }
 
-    private void CompleteNavigationTeardownAudit()
+    private NavigationTeardownAuditResult CompleteNavigationTeardownAudit()
     {
+        pendingNavigationTeardownAuditFrame = -1;
+        navigationTeardownAuditAttempts++;
         int unloadedSceneHandle = navigationTeardownSceneHandle;
         int expectedAstarId = navigationTeardownAstarHostInstanceId;
         int expectedRvoId = navigationTeardownRvoInstanceId;
         bool ownedAstarHost = navigationTeardownOwnedAstarHost;
         bool ownedRvoSimulator = navigationTeardownOwnedRvoSimulator;
         bool hadRuntimeGraph = navigationTeardownHadRuntimeGraph;
+        GridGraph expectedRuntimeGraph = navigationTeardownRuntimeGraph;
+
+        try
+        {
+            var identityErrors = new List<string>();
+            if (unloadedSceneHandle == 0) identityErrors.Add("scene-handle=0");
+            if (navigationTeardownAuditGeneration == 0) identityErrors.Add("audit-generation=0");
+            if (navigationTeardownAuditStartedFrame < 0) identityErrors.Add("audit-start-frame=missing");
+            if (navigationTeardownAuditDeadlineFrame !=
+                navigationTeardownAuditStartedFrame + NavigationTeardownAuditHardDeadlineFrames)
+                identityErrors.Add("audit-deadline-mutated");
+            if (hadRuntimeGraph && !navigationTeardownRuntimeGraphReferenceCaptured)
+                identityErrors.Add("graph-reference-not-captured");
+            if (hadRuntimeGraph && expectedAstarId == 0) identityErrors.Add("graph-host-id=0");
+            if (ownedAstarHost && expectedAstarId == 0) identityErrors.Add("owned-astar-host-id=0");
+            if (ownedRvoSimulator && expectedRvoId == 0) identityErrors.Add("owned-rvo-id=0");
+            if (ownedAstarHost && !navigationTeardownAstarHostReferenceCaptured)
+                identityErrors.Add("owned-astar-host-reference-not-captured");
+            if (ownedRvoSimulator && !navigationTeardownRvoReferenceCaptured)
+                identityErrors.Add("owned-rvo-reference-not-captured");
+            if (runtimeNavigationOwnerSceneHandle != 0 &&
+                runtimeNavigationOwnerSceneHandle != unloadedSceneHandle)
+                identityErrors.Add("active-owner=" + runtimeNavigationOwnerSceneHandle);
+            if (runtimeNavigationGraph != null && runtimeNavigationGraph != expectedRuntimeGraph)
+                identityErrors.Add("active-graph-reference-changed");
+            if (runtimeNavigationAstar != null && runtimeNavigationAstar.gameObject != null &&
+                runtimeNavigationAstar.gameObject.GetInstanceID() != expectedAstarId)
+                identityErrors.Add("active-astar-host-changed");
+            if (runtimeAstarHost != null && runtimeAstarHost.GetInstanceID() != expectedAstarId)
+                identityErrors.Add("active-owned-astar-host-changed");
+            if (runtimeRvoSimulator != null && runtimeRvoSimulator.GetInstanceID() != expectedRvoId)
+                identityErrors.Add("active-rvo-changed");
+            if (identityErrors.Count != 0)
+                return ReportAmbiguousNavigationTeardown(string.Join(",", identityErrors));
+
+            Scene oldOwnerScene = FindLoadedSceneByHandle(unloadedSceneHandle);
+            bool survivingOwnerScene = oldOwnerScene.IsValid() && oldOwnerScene.isLoaded;
+            int survivingOwnedAstarHosts = ownedAstarHost && navigationTeardownAstarHost != null ? 1 : 0;
+            int survivingOwnedRvoSimulators =
+                ownedRvoSimulator && navigationTeardownRvoSimulator != null ? 1 : 0;
+            int survivingRuntimeGraphs = 0;
+
+            Il2CppReferenceArray<UnityEngine.Object> astarObjects =
+                Resources.FindObjectsOfTypeAll(Il2CppType.Of<AstarPath>());
+            foreach (UnityEngine.Object value in astarObjects)
+            {
+                AstarPath astar = value == null ? null : value.TryCast<AstarPath>();
+                if (astar == null || astar.gameObject == null) continue;
+                bool exactHost = expectedAstarId != 0 &&
+                                 astar.gameObject.GetInstanceID() == expectedAstarId;
+                if (!hadRuntimeGraph) continue;
+                if (astar.data == null || astar.data.graphs == null)
+                {
+                    if (exactHost)
+                        return ReportAmbiguousNavigationTeardown("exact-graph-host-uninspectable");
+                    continue;
+                }
+                foreach (Pathfinding.NavGraph graph in astar.data.graphs)
+                {
+                    if (graph == null) continue;
+                    bool exactGraph = graph == expectedRuntimeGraph;
+                    bool reservedRuntimeGraph = string.Equals(graph.name, RuntimeGraphName,
+                        StringComparison.Ordinal);
+                    if (exactGraph || reservedRuntimeGraph) survivingRuntimeGraphs++;
+                }
+            }
+
+            bool passed = !survivingOwnerScene && survivingOwnedAstarHosts == 0 &&
+                          survivingOwnedRvoSimulators == 0 && survivingRuntimeGraphs == 0;
+            navigationTeardownAuditLastDetail = "ownerScene=" + (survivingOwnerScene ? 1 : 0) +
+                                                ",ownedAstarHosts=" + survivingOwnedAstarHosts +
+                                                ",runtimeGraphs=" + survivingRuntimeGraphs +
+                                                ",ownedRvoSimulators=" + survivingOwnedRvoSimulators;
+            string message = "Vektor Kill House post-unload navigation teardown gate: passed=" + passed +
+                             ", unloadedSceneHandle=" + unloadedSceneHandle +
+                             ", generation=" + navigationTeardownAuditGeneration +
+                             ", attempts=" + navigationTeardownAuditAttempts +
+                             ", startFrame=" + navigationTeardownAuditStartedFrame +
+                             ", deadlineFrame=" + navigationTeardownAuditDeadlineFrame +
+                             ", " + navigationTeardownAuditLastDetail + ".";
+            if (!passed)
+            {
+                log?.LogError(message);
+                return NavigationTeardownAuditResult.Survivors;
+            }
+
+            RetireRuntimeNavigationStateAfterAbsenceProof(unloadedSceneHandle);
+            try
+            {
+                log?.LogInfo(message);
+            }
+            catch
+            {
+                // Logging cannot revoke an already completed exact absence proof.
+            }
+            return NavigationTeardownAuditResult.Passed;
+        }
+        catch (Exception exception)
+        {
+            return ReportAmbiguousNavigationTeardown(exception.GetType().Name + ":" + exception.Message);
+        }
+    }
+
+    private NavigationTeardownAuditResult ReportAmbiguousNavigationTeardown(string detail)
+    {
+        navigationTeardownAuditLastDetail = detail;
+        try
+        {
+            log?.LogError("Vektor Kill House post-unload navigation teardown gate was ambiguous; " +
+                          "owned state remains retained: unloadedSceneHandle=" + navigationTeardownSceneHandle +
+                          ", generation=" + navigationTeardownAuditGeneration +
+                          ", attempts=" + navigationTeardownAuditAttempts +
+                          ", deadlineFrame=" + navigationTeardownAuditDeadlineFrame +
+                          ", detail=" + detail + ".");
+        }
+        catch
+        {
+            // Ambiguity must retain ownership even when diagnostics cannot be emitted.
+        }
+        return NavigationTeardownAuditResult.Ambiguous;
+    }
+
+    private void RetireRuntimeNavigationStateAfterAbsenceProof(int unloadedSceneHandle)
+    {
+        if (unloadedSceneHandle == 0 || navigationTeardownSceneHandle != unloadedSceneHandle)
+            throw new InvalidOperationException("navigation teardown snapshot changed before retirement");
+        if (runtimeNavigationOwnerSceneHandle != 0 &&
+            runtimeNavigationOwnerSceneHandle != unloadedSceneHandle)
+            throw new InvalidOperationException("a newer navigation owner cannot be retired by an older audit");
+
+        runtimeNavigationGraph = null;
+        runtimeNavigationAstar = null;
+        runtimeAstarHost = null;
+        runtimeRvoSimulator = null;
+        runtimeOwnsAstarHost = false;
+        runtimeOwnsRvoSimulator = false;
+        runtimeNavigationOwnerSceneHandle = 0;
+        runtimeNavigationAstarHostInstanceId = 0;
+        runtimeNavigationRvoInstanceId = 0;
+        runtimeNavigationAstarHostReferenceCaptured = false;
+        runtimeNavigationRvoReferenceCaptured = false;
         pendingNavigationTeardownAuditFrame = -1;
         navigationTeardownSceneHandle = 0;
         navigationTeardownAstarHostInstanceId = 0;
@@ -5049,104 +6158,124 @@ public sealed class OperatorKillHousePlugin : BasePlugin
         navigationTeardownOwnedAstarHost = false;
         navigationTeardownOwnedRvoSimulator = false;
         navigationTeardownHadRuntimeGraph = false;
-
-        int survivingOwnedAstarHosts = 0;
-        int survivingOwnedRvoSimulators = 0;
-        int survivingRuntimeGraphs = 0;
-        try
-        {
-            Il2CppReferenceArray<UnityEngine.Object> astarObjects =
-                Resources.FindObjectsOfTypeAll(Il2CppType.Of<AstarPath>());
-            foreach (UnityEngine.Object value in astarObjects)
-            {
-                AstarPath astar = value == null ? null : value.TryCast<AstarPath>();
-                if (astar == null || astar.gameObject == null) continue;
-                Scene ownerScene = astar.gameObject.scene;
-                bool exactOwner = expectedAstarId != 0 &&
-                                  astar.gameObject.GetInstanceID() == expectedAstarId;
-                bool oldOwnedSceneHost = ownerScene.IsValid() && ownerScene.handle == unloadedSceneHandle &&
-                                         string.Equals(astar.gameObject.name,
-                                             "MOD_VektorKillHouse_AstarPath", StringComparison.Ordinal);
-                if (!exactOwner && !oldOwnedSceneHost) continue;
-                if (ownedAstarHost) survivingOwnedAstarHosts++;
-                if (!hadRuntimeGraph || astar.data == null || astar.data.graphs == null) continue;
-                foreach (Pathfinding.NavGraph graph in astar.data.graphs)
-                    if (graph != null && string.Equals(graph.name, RuntimeGraphName, StringComparison.Ordinal))
-                        survivingRuntimeGraphs++;
-            }
-
-            Il2CppReferenceArray<UnityEngine.Object> rvoObjects =
-                Resources.FindObjectsOfTypeAll(Il2CppType.Of<RVOSimulator>());
-            foreach (UnityEngine.Object value in rvoObjects)
-            {
-                RVOSimulator simulator = value == null ? null : value.TryCast<RVOSimulator>();
-                if (simulator == null || simulator.gameObject == null) continue;
-                Scene ownerScene = simulator.gameObject.scene;
-                bool exactOwner = expectedRvoId != 0 && simulator.GetInstanceID() == expectedRvoId;
-                bool oldOwnedSceneHost = ownerScene.IsValid() && ownerScene.handle == unloadedSceneHandle &&
-                                         string.Equals(simulator.gameObject.name,
-                                             "MOD_VektorKillHouse_AstarPath", StringComparison.Ordinal);
-                if (ownedRvoSimulator && (exactOwner || oldOwnedSceneHost)) survivingOwnedRvoSimulators++;
-            }
-
-            bool passed = survivingOwnedAstarHosts == 0 && survivingOwnedRvoSimulators == 0 &&
-                          survivingRuntimeGraphs == 0;
-            string message = "Vektor Kill House post-unload navigation teardown gate: passed=" + passed +
-                             ", unloadedSceneHandle=" + unloadedSceneHandle +
-                             ", ownedAstarHosts=" + survivingOwnedAstarHosts +
-                             ", runtimeGraphs=" + survivingRuntimeGraphs +
-                             ", ownedRvoSimulators=" + survivingOwnedRvoSimulators + ".";
-            if (passed) log.LogInfo(message);
-            else log.LogError(message);
-        }
-        catch (Exception exception)
-        {
-            log.LogError("Vektor Kill House post-unload navigation teardown gate failed: " +
-                         exception.GetType().Name + ": " + exception.Message + ".");
-        }
+        navigationTeardownRuntimeGraph = null;
+        navigationTeardownRuntimeGraphReferenceCaptured = false;
+        navigationTeardownAstarHost = null;
+        navigationTeardownRvoSimulator = null;
+        navigationTeardownAstarHostReferenceCaptured = false;
+        navigationTeardownRvoReferenceCaptured = false;
+        navigationTeardownAuditAttempts = 0;
+        navigationTeardownAuditStartedFrame = -1;
+        navigationTeardownAuditDeadlineFrame = -1;
+        navigationTeardownAuditGeneration = 0;
+        navigationTeardownAuditLastDetail = string.Empty;
     }
 
-    private void ReleaseRuntimeNavigationGraph(AstarPath astar, string reason)
+    private bool ReleaseRuntimeNavigationGraph(AstarPath astar, string reason)
     {
-        if (runtimeNavigationGraph == null) return;
+        if (runtimeNavigationGraph == null) return true;
         try
         {
-            bool removed = astar != null && astar.data != null && astar.data.RemoveGraph(runtimeNavigationGraph);
-            log.LogInfo("Vektor Kill House navigation graph released: reason=" + reason + ", removed=" + removed + ".");
+            if (!TryIsRuntimeNavigationGraphAttached(astar, out bool attached))
+            {
+                log.LogWarning("Vektor Kill House navigation graph release deferred: reason=" + reason +
+                               ", graph attachment could not be inspected.");
+                return false;
+            }
+            if (!attached)
+            {
+                runtimeNavigationGraph = null;
+                log.LogInfo("Vektor Kill House navigation graph was already detached: reason=" + reason + ".");
+                return true;
+            }
+
+            bool removed = astar.data.RemoveGraph(runtimeNavigationGraph);
+            if (!TryIsRuntimeNavigationGraphAttached(astar, out bool afterAttached))
+            {
+                log.LogWarning("Vektor Kill House navigation graph release deferred after removal attempt: reason=" +
+                               reason + ", removed=" + removed + ", attachment could not be reinspected.");
+                return false;
+            }
+            bool passed = !afterAttached;
+            log.LogInfo("Vektor Kill House navigation graph released: reason=" + reason +
+                        ", removed=" + removed + ", stillAttached=" + afterAttached + ".");
+            if (passed) runtimeNavigationGraph = null;
+            return passed;
         }
         catch (Exception exception)
         {
             log.LogWarning("Vektor Kill House navigation graph release warning: " + exception.Message);
+            return false;
         }
-        runtimeNavigationGraph = null;
     }
 
-    private void ReleaseRuntimeNavigation(string reason)
+    private bool TryIsRuntimeNavigationGraphAttached(AstarPath astar, out bool attached)
     {
-        try
+        attached = false;
+        if (astar == null || astar.data == null || astar.data.graphs == null) return false;
+        foreach (Pathfinding.NavGraph graph in astar.data.graphs)
         {
-            ReleaseRuntimeNavigationGraph(runtimeNavigationAstar, reason);
+            if (graph != runtimeNavigationGraph) continue;
+            attached = true;
+            break;
         }
-        catch (Exception exception)
+        return true;
+    }
+
+    private bool ReleaseRuntimeNavigation(string reason)
+    {
+        if (!ReleaseRuntimeNavigationGraph(runtimeNavigationAstar, reason)) return false;
+
+        bool passed = true;
+        bool rvoOwnedByAstarHost = runtimeOwnsAstarHost && runtimeAstarHost != null &&
+                                   runtimeRvoSimulator != null &&
+                                   runtimeRvoSimulator.gameObject == runtimeAstarHost;
+        if (runtimeOwnsRvoSimulator && runtimeRvoSimulator != null && !rvoOwnedByAstarHost)
         {
-            log?.LogWarning("Vektor Kill House navigation release warning: " + exception.Message);
-            runtimeNavigationGraph = null;
+            try
+            {
+                UnityEngine.Object.Destroy(runtimeRvoSimulator);
+                runtimeRvoSimulator = null;
+                runtimeOwnsRvoSimulator = false;
+            }
+            catch (Exception exception)
+            {
+                passed = false;
+                log?.LogWarning("Vektor Kill House RVO release warning: " + exception.Message);
+            }
         }
-        if (runtimeOwnsRvoSimulator && runtimeRvoSimulator != null &&
-            (runtimeAstarHost == null || runtimeRvoSimulator.gameObject != runtimeAstarHost))
-            UnityEngine.Object.Destroy(runtimeRvoSimulator);
         if (runtimeOwnsAstarHost && runtimeAstarHost != null)
         {
-            UnityEngine.Object.Destroy(runtimeAstarHost);
+            try
+            {
+                runtimeAstarHost.SetActive(false);
+                UnityEngine.Object.Destroy(runtimeAstarHost);
+                runtimeAstarHost = null;
+                runtimeOwnsAstarHost = false;
+                if (rvoOwnedByAstarHost)
+                {
+                    runtimeRvoSimulator = null;
+                    runtimeOwnsRvoSimulator = false;
+                }
+            }
+            catch (Exception exception)
+            {
+                passed = false;
+                log?.LogWarning("Vektor Kill House Astar host release warning: " + exception.Message);
+            }
         }
-        runtimeAstarHost = null;
-        runtimeRvoSimulator = null;
+        else if (runtimeAstarHost == null) runtimeOwnsAstarHost = false;
+
+        if (!runtimeOwnsAstarHost) runtimeAstarHost = null;
+        if (!runtimeOwnsRvoSimulator) runtimeRvoSimulator = null;
+        if (!passed) return false;
+
         runtimeNavigationAstar = null;
-        runtimeOwnsAstarHost = false;
-        runtimeOwnsRvoSimulator = false;
         runtimeNavigationOwnerSceneHandle = 0;
         runtimeNavigationAstarHostInstanceId = 0;
         runtimeNavigationRvoInstanceId = 0;
+        return runtimeNavigationGraph == null && runtimeAstarHost == null && runtimeRvoSimulator == null &&
+               !runtimeOwnsAstarHost && !runtimeOwnsRvoSimulator;
     }
 
     private void ReleaseOwnedMaterials()
@@ -5158,31 +6287,114 @@ public sealed class OperatorKillHousePlugin : BasePlugin
         ownedRuntimeMaterialIds.Clear();
     }
 
+    private void AttemptRuntimeContractFailureStep(string name, Action step, List<string> errors)
+    {
+        try
+        {
+            step();
+        }
+        catch (Exception exception)
+        {
+            try
+            {
+                errors.Add(name + "=" + exception.GetType().Name + ":" + exception.Message);
+            }
+            catch
+            {
+                // The failure state is already authoritative; diagnostics must never undo it.
+            }
+            try
+            {
+                log?.LogError("Vektor Kill House failure-publication step failed: step=" + name +
+                              ", exception=" + exception + ".");
+            }
+            catch
+            {
+                // Logging is best effort inside the no-throw failure path.
+            }
+        }
+    }
+
+    private void EnsureRuntimeContractFailureMarker(Scene scene, GameObject root, string markerName,
+        ref GameObject ownedMarker)
+    {
+        if (ownedMarker != null) return;
+        if (!scene.IsValid() || !scene.isLoaded)
+            throw new InvalidOperationException("failure marker scene is not loaded");
+        Transform[] matching = FindRuntimeContractMarkers(scene)
+            .Where(item => string.Equals(item.name, markerName, StringComparison.Ordinal)).ToArray();
+        if (matching.Length > 1)
+            throw new InvalidOperationException("failure marker is duplicated: " + markerName +
+                                                " count=" + matching.Length);
+        if (matching.Length == 1) return;
+
+        // Retain ownership as soon as allocation succeeds. If parenting or scene movement throws,
+        // unload can still retire the partially published object instead of losing the reference.
+        ownedMarker = new GameObject(markerName);
+        if (root != null) ownedMarker.transform.SetParent(root.transform, false);
+        else SceneManager.MoveGameObjectToScene(ownedMarker, scene);
+    }
+
     private void MarkFailure(Scene scene, GameObject root, string reason)
     {
-        if (root != null && root.transform.Find(FailureMarkerName) == null)
+        runtimeContractState = RuntimeContractState.Failed;
+        applyNotBeforeFrame = -1;
+        aiSightOcclusionPending = false;
+        aiSightOcclusionPassed = false;
+        opticAuditPending = false;
+        nextOpticIdentityProbeFrame = -1;
+
+        var errors = new List<string>();
+        AttemptRuntimeContractFailureStep("capture-scene-owner", () =>
         {
-            GameObject marker = new GameObject(FailureMarkerName);
-            marker.transform.SetParent(root.transform, false);
-        }
-        if (root != null && root.transform.Find(ModdedOperationsFailureMarkerName) == null)
+            if (scene.IsValid() && scene.isLoaded) runtimeContractSceneHandle = scene.handle;
+        }, errors);
+        AttemptRuntimeContractFailureStep("retire-runtime-ready", () =>
+            RetireOwnedRuntimeContractMarker(ref ownedRuntimeReadyMarker, "failure"), errors);
+        AttemptRuntimeContractFailureStep("retire-framework-ready", () =>
+            RetireOwnedRuntimeContractMarker(ref ownedFrameworkReadyMarker, "failure"), errors);
+        AttemptRuntimeContractFailureStep("publish-runtime-failure", () =>
+            EnsureRuntimeContractFailureMarker(scene, root, FailureMarkerName,
+                ref ownedRuntimeFailureMarker), errors);
+        AttemptRuntimeContractFailureStep("publish-framework-failure", () =>
+            EnsureRuntimeContractFailureMarker(scene, root, ModdedOperationsFailureMarkerName,
+                ref ownedFrameworkFailureMarker), errors);
+        AttemptRuntimeContractFailureStep("deactivate-runtime-root", () =>
         {
-            GameObject marker = new GameObject(ModdedOperationsFailureMarkerName);
-            marker.transform.SetParent(root.transform, false);
+            if (root != null) root.SetActive(false);
+        }, errors);
+        AttemptRuntimeContractFailureStep("restore-warehouse-lighting", RestoreWarehouseOnlyLighting, errors);
+        AttemptRuntimeContractFailureStep("restore-weapon-illumination", () =>
+            RestoreWeaponIlluminationBoosts(), errors);
+        AttemptRuntimeContractFailureStep("restore-global-flashlight", RestoreGlobalFlashlightMultiplier, errors);
+
+        try
+        {
+            runtimeContractFailurePublicationErrors = errors.Count == 0
+                ? string.Empty
+                : string.Join(" | ", errors);
         }
-        log.LogError("Vektor Kill House runtime gate failed closed: scene=" + scene.name + ", reason=" + reason + ".");
-        if (root != null) root.SetActive(false);
-        RestoreWarehouseOnlyLighting();
-        RestoreWeaponIlluminationBoosts();
-        RestoreGlobalFlashlightMultiplier();
+        catch
+        {
+            runtimeContractFailurePublicationErrors = "failure-diagnostic-formatting-failed";
+        }
+        try
+        {
+            string sceneName = scene.IsValid() ? scene.name : "<invalid>";
+            log?.LogError("Vektor Kill House runtime gate failed closed: scene=" + sceneName +
+                          ", reason=" + reason + ", publicationErrors=[" +
+                          runtimeContractFailurePublicationErrors + "].");
+        }
+        catch
+        {
+            // The method is intentionally no-throw after committing the failure state.
+        }
     }
 
     private static bool IsKillHouseScene(Scene scene)
     {
         if (!scene.IsValid() || !scene.isLoaded) return false;
-        if (!string.IsNullOrEmpty(scene.path) && ScenePaths.Contains(scene.path)) return true;
-        return ScenePaths.Any(path => string.Equals(Path.GetFileNameWithoutExtension(path), scene.name,
-                                                     StringComparison.OrdinalIgnoreCase));
+        return !string.IsNullOrEmpty(scene.path) && ScenePaths.Contains(scene.path);
     }
 
     private static GameObject FindOwnedRoot(Scene scene)

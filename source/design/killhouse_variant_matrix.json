@@ -1,50 +1,61 @@
 {
-  "schema": "vektor-killhouse/variant-matrix@14",
+  "schema": "vektor-killhouse/variant-matrix@15",
   "projectId": "community.vektor-modular-killhouse",
   "mapId": "community.vektor-modular-killhouse.modular-killhouse",
   "releaseTargets": {
-    "packageVersion": "0.1.18",
-    "companionVersion": "0.1.16",
-    "bundledApiVersion": "0.2.0-alpha.6",
-    "sceneValidationSchema": "vektor-killhouse/scene-validation@18",
-    "aggregateSceneValidationSchema": "vektor-killhouse/aggregate-scene-validation@18",
+    "packageVersion": "0.1.22",
+    "companionVersion": "0.1.18",
+    "bundledApiVersion": "0.2.0-alpha.7",
+    "sceneValidationSchema": "vektor-killhouse/scene-validation@19",
+    "aggregateSceneValidationSchema": "vektor-killhouse/aggregate-scene-validation@19",
     "nativeAssetAllowlistSchema": "vektor-killhouse/native-asset-allowlist@4"
   },
   "runtimeCompatibility": {
     "packageContentIdentity": {
       "domain": "OperatorModAPI.ModdedMapPackageContent.v1",
-      "sha256": "77bc1d780e34cbb3f9ba29aa08287ecdb4238976a5b8631621e7719c502ece1e"
+      "sha256": "b71f3ce2253552b8a6833650007d31e2628e446c0d71a737e9668932a2899c0b"
     },
     "framework": {
       "pluginGuid": "operator.modded-operations",
-      "version": "0.3.29",
+      "version": "0.3.30",
       "fileName": "OperatorModdedOperations.dll",
-      "bytes": 279552,
-      "sha256": "95cef59f62b2df40ed69c066692953210cdc17a9c3d08db95753da7a9b4142cd"
+      "bytes": 640000,
+      "sha256": "e77412f83c418eddc5422f702382beb75afb6459430cd7b64b8eb0594549eba8",
+      "melonLoaderFileName": "OperatorModdedOperations.MelonLoader.dll",
+      "melonLoaderBytes": 641536,
+      "melonLoaderSha256": "2a6694e798a3af2c3cf1565f50bf20556e83a48fd60cf7ed0efbe754f3572903"
     },
     "bundledApi": {
       "delivery": "modded-operations-bundled-only",
       "standaloneAlphaReleaseAllowed": false,
-      "version": "0.2.0-alpha.6",
+      "version": "0.2.0-alpha.7",
       "core": {
         "fileName": "OperatorModAPI.dll",
-        "bytes": 179200,
-        "sha256": "0c27854dfdd3c9f0946f5bcbc61ce37dae3037215bb5fc11c3400bd50190eb77"
+        "bytes": 204800,
+        "sha256": "5b74ac25b4047d9ab8e9929d136c53b7543da52b621faf3d4af42719d276e21e"
       },
       "host": {
         "fileName": "OperatorModAPI.BepInEx.dll",
-        "bytes": 25600,
-        "sha256": "a58e1fa50ce345931104b9980afbaf356b8eeac0e7a735bef7bd21fc93727ad9"
+        "bytes": 15872,
+        "sha256": "6223553c5406ad3586f23ea2b5f05c6f4626fa62a03e0598667e09a5486e1e3b"
+      },
+      "melonLoaderHost": {
+        "fileName": "OperatorModAPI.MelonLoader.dll",
+        "bytes": 24576,
+        "sha256": "1cc745ab57a18848f15a47c80fce5399c4006fe3ade2c94b449792cfbabff7fa"
       }
     },
     "runtimeCompanion": {
       "pluginGuid": "operator.vektor-killhouse",
-      "pluginVersion": "0.1.16",
-      "bytes": 434176,
-      "sha256": "a3240fd73a269572a8421b3e8428d899ca4d8b91642691a4161bb7bce33cd427",
+      "pluginVersion": "0.1.18",
+      "bytes": 466944,
+      "sha256": "e0acedea31203009e74bc631110b81abd581d80fb68aa979b41119578dfd9e34",
+      "melonLoaderBytes": 467968,
+      "melonLoaderSha256": "5fd24a36d93d8d7f40df37ce3abc1d32024ebdc88b3c42bec8d6f53d5437eeb6",
+      "runtimeContentId": "37966b4bc33f11d2061ecf87d2de73730be0b33fe2baf92f7e23a633dc80db25",
       "sourceFile": "source/runtime/OperatorKillHousePlugin.cs",
-      "sourceBytes": 310512,
-      "sourceSha256": "6a28b5319b1c7d06c0ece95a0b51b49a09bb3a934a27b7c81044986f606aa0af",
+      "sourceBytes": 371710,
+      "sourceSha256": "73d7f68ea4bd30b544acd922316e1ceddc637acda2768f149b992208cf693026",
       "readyMarkerName": "MODDED_OPERATIONS_RUNTIME_CONTRACT_READY",
       "failureMarkerName": "MODDED_OPERATIONS_RUNTIME_CONTRACT_FAILED",
       "sceneScope": "exact-generation-scene",
@@ -91,7 +102,7 @@
   "selection": {
     "mode": "framework-owned-persistent-shuffle-bag",
     "ownerPluginId": "operator.modded-operations",
-    "minimumFrameworkVersion": "0.3.29",
+    "minimumFrameworkVersion": "0.3.30",
     "declarationGate": "sceneVariants.count>1",
     "selectionEvent": "fresh-operation-room-confirm",
     "selectOnceBeforeBundleSceneLoad": true,
@@ -292,7 +303,10 @@
   },
   "lighting": {
     "visibleFixtureSource": "Lamp_fluorescent_B",
-    "warehouseFixtureHeightMeters": 6.8,
+    "fixtureRoofMountMode": "nine-sample-exact-warehouse-roof-collider",
+    "fixtureRoofMountGapMeters": 0.04,
+    "fixtureRoofMountToleranceMeters": 0.015,
+    "fixtureLightDropBelowTopMeters": 0.18,
     "directionalLightsEnabled": 0,
     "nonFixturePointLights": 0,
     "skybox": "none",
@@ -353,8 +367,9 @@
     "exactPlayerMarkersPerScene": 4,
     "pvpPlayerMarkersExcluded": true,
     "minEnemies": 10,
-    "maxEnemies": 15,
-    "enemyMarkersPerScene": 36,
+    "maxEnemies": 60,
+    "enemyMarkersPerScene": 72,
+    "minimumPlanarEnemyMarkerSeparationMeters": 2.05,
     "enemyCountOwner": "operator-modded-operations",
     "allEnemyMarkersRequireTacticalCover": true,
     "allEnemyMarkersFaceLikelyIngress": true,
@@ -460,7 +475,9 @@
     "maximumAverageConnectorLengthMeters": 4.0,
     "fixedCellSpacingForbidden": true,
     "minimumSpatialFeatureModulesPerVariant": 2,
-    "minimumTacticalEnemyMarkersPerVariant": 36,
+    "minimumTacticalEnemyMarkersPerVariant": 72,
+    "minimumCertifiedPveEnemyCapacityPerVariant": 60,
+    "minimumEnemyMarkerPlanarSeparationMeters": 2.05,
     "maximumInvalidTacticalEnemyMarkersPerVariant": 0,
     "minimumDistinctTacticalRolesPerVariant": 3,
     "requiredWarehouseExactPrefabPartsPerVariant": 4,
