@@ -13,9 +13,9 @@ Related projects:
 
 | Component | Version/status |
 | --- | --- |
-| Map package | `0.1.22` |
-| Runtime companion | `0.1.18` (BepInEx and MelonLoader variants) |
-| Required Modded Operations | `0.3.30` |
+| Map package | `0.1.24` |
+| Runtime companion | `0.1.20` (BepInEx and MelonLoader variants) |
+| Required Modded Operations | `0.3.31` |
 | Bundled internal Operator Mod API | `0.2.0-alpha.7` |
 | PVE | 1-4 players; selectable 10-60 enemies |
 | PVP | 2-12 players; six authored spawns per team |
@@ -35,6 +35,9 @@ supported until a real host and separate remote complete its paired-log matrix.
 - Separate PVP operation for 2-12 players with six spawns per team.
 - Native OPERATOR doors, furniture, warehouse presentation, lighting, and post-processing.
 - Preloaded decompressed door audio to reduce the hitch on the first doors opened.
+- One owner-local insertion placement per exact scene generation; no periodic
+  teleport-to-spawn maintenance after gameplay begins.
+- Bounded cached runtime-readiness checks instead of repeated full-scene scans.
 - Restart keeps the selected layout for the current operation.
 - Completed-operation teardown releases transition ownership so another packaged map can load next.
 - Exact package, companion, framework, runtime, player, and PVE population checks for multiplayer testing.
@@ -55,7 +58,7 @@ supported until a real host and separate remote complete its paired-log matrix.
 
 - A legally owned, installed copy of OPERATOR.
 - exactly one supported BepInEx or MelonLoader runtime plus generated interop assemblies.
-- OPERATOR: Modded Operations `0.3.30` with its bundled internal API alpha.7.
+- OPERATOR: Modded Operations `0.3.31` with its bundled internal API alpha.7.
 - Unity `6000.3.8f1` with HDRP `17.3.0`.
 - Native asset inputs extracted from your own installed game.
 

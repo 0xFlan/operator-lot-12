@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.1.24 / companion 0.1.20 runtime-fix candidate — 2026-08-30
+
+- Removed periodic player repositioning. Each owner places its own character at
+  the assigned insertion once per exact scene generation, acknowledges it, and
+  retires the placement path for normal gameplay.
+- Kept remote player transforms, AI transforms, bullets, hits, health, damage,
+  animation, and death under OPERATOR/Mirror ownership.
+- Required Modded Operations `0.3.31`, which caches the companion READY marker
+  and bounds steady-state membership/readiness work instead of repeatedly
+  scanning the complete scene.
+- Retained the separate 1-4 player PVE operation with a 10-60 enemy selector and
+  the separate 2-12 player PVP operation with six spawns per team.
+- Passed the repository and dual-loader binary audits, a fresh native Restart
+  lifecycle, and a 120-second local PVE run: 10/10 AI grounded and network-ready,
+  six moved at least one metre, no repeated placement, p99 32.08 ms, and only
+  9.4 MiB private-memory growth. Separate-PC host/client PVE and PVP proof is
+  still mandatory before online support is claimed.
+
 ## 0.1.22 / companion 0.1.18 test candidate — 2026-08-29
 
 - Preloaded all 47 wooden-door clips from the shared dependency bundle, using

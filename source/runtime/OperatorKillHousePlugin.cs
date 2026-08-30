@@ -34,13 +34,13 @@ using RVOSimulator = Pathfinding.RVO.RVOSimulator;
 namespace OperatorKillHouse;
 
 [BepInPlugin(PluginGuid, PluginName, PluginVersion)]
-[BepInDependency("operator.modded-operations", "0.3.30")]
+[BepInDependency("operator.modded-operations")]
 [BepInDependency("operator.modapi", "0.2.0-alpha.7")]
 public sealed class OperatorKillHousePlugin : BasePlugin
 {
     public const string PluginGuid = "operator.vektor-killhouse";
     public const string PluginName = "LOT 12: FALSE WALL";
-    public const string PluginVersion = "0.1.18";
+    public const string PluginVersion = "0.1.20";
 
     private const string ExactUnityVersion = "6000.3.8f1";
     private const float IndoorFlashlightMultiplier = 6f;
@@ -321,6 +321,7 @@ public sealed class OperatorKillHousePlugin : BasePlugin
     private int applyNotBeforeFrame = -1;
     private RuntimeContractState runtimeContractState;
     private int runtimeContractSceneHandle;
+    private GameObject runtimeContractRoot;
     private GameObject ownedRuntimeReadyMarker;
     private GameObject ownedFrameworkReadyMarker;
     private GameObject ownedRuntimeFailureMarker;
@@ -640,7 +641,7 @@ public sealed class OperatorKillHousePlugin : BasePlugin
                 runtimeContractState is RuntimeContractState.None or RuntimeContractState.Failed) return;
             Scene contractScene = FindLoadedSceneByHandle(runtimeContractSceneHandle);
             GameObject contractRoot = contractScene.IsValid() && contractScene.isLoaded
-                ? FindOwnedRoot(contractScene)
+                ? runtimeContractRoot
                 : null;
             MarkFailure(contractScene, contractRoot, "plugin-unload");
         }, failures);
@@ -717,6 +718,7 @@ public sealed class OperatorKillHousePlugin : BasePlugin
         AttemptUnloadStep("runtime-contract-state", () =>
         {
             runtimeContractSceneHandle = 0;
+            runtimeContractRoot = null;
             runtimeContractState = RuntimeContractState.None;
             runtimeContractFailurePublicationErrors = string.Empty;
         }, failures);
@@ -752,6 +754,7 @@ public sealed class OperatorKillHousePlugin : BasePlugin
         if (ownedFrameworkFailureMarker != null) residues.Add("framework-failure-marker");
         if (runtimeContractSceneHandle != 0 || runtimeContractState != RuntimeContractState.None)
             residues.Add("runtime-contract-state");
+        if (runtimeContractRoot != null) residues.Add("runtime-contract-root");
         if (sceneLoadedCallback != null) residues.Add("scene-loaded-callback");
         if (sceneUnloadedCallback != null) residues.Add("scene-unloaded-callback");
         if (KillHouseUpdateDriver.Tick != null) residues.Add("update-driver-callback");
@@ -815,6 +818,7 @@ public sealed class OperatorKillHousePlugin : BasePlugin
         runtimeContractFailurePublicationErrors = string.Empty;
 
         GameObject root = FindOwnedRoot(scene);
+        runtimeContractRoot = root;
         Transform[] reserved = FindRuntimeContractMarkers(scene);
         if (reserved.Length == 0) return true;
 
@@ -878,6 +882,7 @@ public sealed class OperatorKillHousePlugin : BasePlugin
         RetireOwnedRuntimeContractMarker(ref ownedFrameworkReadyMarker, reason);
         RetireOwnedRuntimeContractMarker(ref ownedRuntimeReadyMarker, reason);
         runtimeContractSceneHandle = 0;
+        runtimeContractRoot = null;
         runtimeContractState = RuntimeContractState.None;
         runtimeContractFailurePublicationErrors = string.Empty;
     }
@@ -890,6 +895,7 @@ public sealed class OperatorKillHousePlugin : BasePlugin
         ownedRuntimeFailureMarker = null;
         ownedFrameworkFailureMarker = null;
         runtimeContractSceneHandle = 0;
+        runtimeContractRoot = null;
         runtimeContractState = RuntimeContractState.None;
         runtimeContractFailurePublicationErrors = string.Empty;
     }
@@ -928,31 +934,33 @@ public sealed class OperatorKillHousePlugin : BasePlugin
 
     private bool EnforceRuntimeContractFailureWins()
     {
-        if (runtimeContractState is RuntimeContractState.None or RuntimeContractState.Failed ||
-            runtimeContractSceneHandle == 0) return runtimeContractState != RuntimeContractState.Failed;
+        if (runtimeContractState == RuntimeContractState.None ||
+            runtimeContractSceneHandle == 0) return true;
+        if (runtimeContractState == RuntimeContractState.Failed) return false;
+        if (runtimeContractState == RuntimeContractState.Pending) return true;
         Scene scene = FindLoadedSceneByHandle(runtimeContractSceneHandle);
         if (!scene.IsValid() || !scene.isLoaded) return true;
-        Transform[] markers = FindRuntimeContractMarkers(scene);
-        bool failurePresent = markers.Any(item =>
-            string.Equals(item.name, FailureMarkerName, StringComparison.Ordinal) ||
-            string.Equals(item.name, ModdedOperationsFailureMarkerName, StringComparison.Ordinal));
-        GameObject root = FindOwnedRoot(scene);
-        if (failurePresent)
-        {
-            MarkFailure(scene, root, "runtime-contract-failure-marker-observed");
-            return false;
-        }
-        if (runtimeContractState != RuntimeContractState.Ready) return true;
-
-        int runtimeReady = markers.Count(item =>
-            string.Equals(item.name, ReadyMarkerName, StringComparison.Ordinal));
-        int frameworkReady = markers.Count(item =>
-            string.Equals(item.name, ModdedOperationsReadyMarkerName, StringComparison.Ordinal));
-        if (runtimeReady == 1 && frameworkReady == 1 && ownedRuntimeReadyMarker != null &&
-            ownedFrameworkReadyMarker != null) return true;
-        MarkFailure(scene, root, "runtime-contract-ready-marker-lost-or-duplicated=" +
-                                 runtimeReady + "/" + frameworkReady);
+        GameObject root = runtimeContractRoot;
+        bool rootOwned = root != null && root.scene.handle == runtimeContractSceneHandle;
+        bool runtimeReady = IsOwnedReadyMarkerValid(
+            ownedRuntimeReadyMarker, ReadyMarkerName, root);
+        bool frameworkReady = IsOwnedReadyMarkerValid(
+            ownedFrameworkReadyMarker, ModdedOperationsReadyMarkerName, root);
+        if (rootOwned && runtimeReady && frameworkReady) return true;
+        MarkFailure(scene, root, "runtime-contract-owned-ready-marker-invalid=" +
+                                 rootOwned + "/" + runtimeReady + "/" + frameworkReady);
         return false;
+    }
+
+    private static bool IsOwnedReadyMarkerValid(
+        GameObject marker,
+        string expectedName,
+        GameObject root)
+    {
+        return marker != null && root != null && marker.activeInHierarchy &&
+               marker.scene.handle == root.scene.handle &&
+               string.Equals(marker.name, expectedName, StringComparison.Ordinal) &&
+               marker.transform.IsChildOf(root.transform);
     }
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
@@ -6347,7 +6355,11 @@ public sealed class OperatorKillHousePlugin : BasePlugin
         var errors = new List<string>();
         AttemptRuntimeContractFailureStep("capture-scene-owner", () =>
         {
-            if (scene.IsValid() && scene.isLoaded) runtimeContractSceneHandle = scene.handle;
+            if (scene.IsValid() && scene.isLoaded)
+            {
+                runtimeContractSceneHandle = scene.handle;
+                runtimeContractRoot = root;
+            }
         }, errors);
         AttemptRuntimeContractFailureStep("retire-runtime-ready", () =>
             RetireOwnedRuntimeContractMarker(ref ownedRuntimeReadyMarker, "failure"), errors);
