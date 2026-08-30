@@ -19,7 +19,7 @@ Related projects:
 | Bundled internal Operator Mod API | `0.2.0-alpha.7` |
 | PVE | 1-4 players; selectable 10-60 enemies |
 | PVP | 2-12 players; six authored spawns per team |
-| Multiplayer status | `PROVEN-STATIC`; live host/remote proof pending |
+| Multiplayer status | Local BepInEx `PROVEN-RUNTIME`; online and MelonLoader live proof pending |
 | Public release status | Source checkpoint only; no binary release from this repo |
 
 Protocol v6 gives both PVE and PVP exact content, scene-generation, companion,

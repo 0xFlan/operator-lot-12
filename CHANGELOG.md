@@ -17,6 +17,10 @@
   six moved at least one metre, no repeated placement, p99 32.08 ms, and only
   9.4 MiB private-memory growth. The current BepInEx RED CELL briefing run also
   passed all 9 local assertions and kept the PVE enemy selector hidden.
+- Passed a fresh 18/18 BepInEx PVE/restart regression: selector 12 retained,
+  72 authored/navigation markers, safe capacity 71, exactly 12 AI spawned and
+  observed, owned population removed, zero framework runtime assets after
+  teardown, and unchanged package closure.
   Separate-PC host/client PVE and PVP proof is
   still mandatory before online support is claimed.
 
