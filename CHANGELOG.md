@@ -15,7 +15,9 @@
 - Passed the repository and dual-loader binary audits, a fresh native Restart
   lifecycle, and a 120-second local PVE run: 10/10 AI grounded and network-ready,
   six moved at least one metre, no repeated placement, p99 32.08 ms, and only
-  9.4 MiB private-memory growth. Separate-PC host/client PVE and PVP proof is
+  9.4 MiB private-memory growth. The current BepInEx RED CELL briefing run also
+  passed all 9 local assertions and kept the PVE enemy selector hidden.
+  Separate-PC host/client PVE and PVP proof is
   still mandatory before online support is claimed.
 
 ## 0.1.22 / companion 0.1.18 test candidate — 2026-08-29
