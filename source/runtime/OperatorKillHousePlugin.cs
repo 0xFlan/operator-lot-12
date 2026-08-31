@@ -59,7 +59,7 @@ public sealed class OperatorKillHousePlugin : BasePlugin
 {
     public const string PluginGuid = "operator.vektor-killhouse";
     public const string PluginName = "LOT 12: FALSE WALL";
-    public const string PluginVersion = "0.1.20";
+    public const string PluginVersion = "0.1.21";
 
     private const string ExactUnityVersion = "6000.3.8f1";
     private const float IndoorFlashlightMultiplier = 6f;
@@ -1201,6 +1201,9 @@ public sealed class OperatorKillHousePlugin : BasePlugin
 
     private void ApplyRuntimeContract()
     {
+        long runtimeContractStarted = System.Diagnostics.Stopwatch.GetTimestamp();
+        long runtimeContractCheckpoint = runtimeContractStarted;
+        var runtimeStageTimings = new List<string>();
         Scene scene = FindLoadedSceneByHandle(pendingSceneHandle);
         if (!IsKillHouseScene(scene)) return;
         GameObject root = FindOwnedRoot(scene);
@@ -1210,26 +1213,44 @@ public sealed class OperatorKillHousePlugin : BasePlugin
             MarkFailure(scene, root, "ownership-or-scene-contract");
             return;
         }
+        AppendRuntimeStageTiming(runtimeStageTimings, "scene-contract",
+            ref runtimeContractCheckpoint);
         bool warehouseOnlyLightingPassed = ApplyWarehouseOnlyLighting(root);
         bool renderPassed = EnsureIndoorRenderContract(root);
         bool fixtureMountsPassed = RepairIndoorFixtureRoofMounts(root);
         bool lightingPassed = warehouseOnlyLightingPassed && renderPassed && fixtureMountsPassed &&
                               ValidateIndoorLighting(root);
+        AppendRuntimeStageTiming(runtimeStageTimings, "lighting",
+            ref runtimeContractCheckpoint);
         bool doorsPassed = lightingPassed && EnsureNativeDoorV2Runtime(root);
+        AppendRuntimeStageTiming(runtimeStageTimings, "doorv2",
+            ref runtimeContractCheckpoint);
         bool materialsPassed = doorsPassed && RebindSceneMaterials(root);
+        AppendRuntimeStageTiming(runtimeStageTimings, "materials",
+            ref runtimeContractCheckpoint);
         bool sightPassed = false;
         bool sightDeferred = false;
         if (materialsPassed) sightPassed = ValidateAiSightOcclusion(root, out sightDeferred);
+        AppendRuntimeStageTiming(runtimeStageTimings, "ai-sight",
+            ref runtimeContractCheckpoint);
         int preparedTacticalEnemyMarkers = 0;
         bool tacticalPreparationPassed = materialsPassed && (sightPassed || sightDeferred) &&
             ValidateTacticalEnemyPlacement(root, true, out preparedTacticalEnemyMarkers, out _);
+        AppendRuntimeStageTiming(runtimeStageTimings, "tactical-preparation",
+            ref runtimeContractCheckpoint);
         bool navigationPassed = tacticalPreparationPassed && EnsureRuntimeNavigationGraph(root);
+        AppendRuntimeStageTiming(runtimeStageTimings, "navigation",
+            ref runtimeContractCheckpoint);
         bool playerSpawnContractPassed = navigationPassed && ValidateRuntimePlayerSpawnAndColliderContract(root);
+        AppendRuntimeStageTiming(runtimeStageTimings, "player-spawn",
+            ref runtimeContractCheckpoint);
         int tacticalEnemyMarkers = 0;
         int certifiedSafeCapacity = 0;
         bool tacticalEnemyPlacementPassed = playerSpawnContractPassed &&
             ValidateTacticalEnemyPlacement(root, false, out tacticalEnemyMarkers, out certifiedSafeCapacity) &&
             tacticalEnemyMarkers == preparedTacticalEnemyMarkers;
+        AppendRuntimeStageTiming(runtimeStageTimings, "tactical-post-snap",
+            ref runtimeContractCheckpoint);
         if (!warehouseOnlyLightingPassed || !renderPassed || !lightingPassed || !doorsPassed || !materialsPassed ||
             (!sightPassed && !sightDeferred) ||
             !tacticalPreparationPassed || !navigationPassed || !playerSpawnContractPassed ||
@@ -1244,6 +1265,10 @@ public sealed class OperatorKillHousePlugin : BasePlugin
                 !tacticalPreparationPassed ? "tactical-enemy-preparation" :
                 !navigationPassed ? "navigation" :
                 !playerSpawnContractPassed ? "player-spawn-collider-contract" : "tactical-enemy-post-snap";
+            log.LogError("Vektor Kill House runtime stage timings before failure: " +
+                string.Join(",", runtimeStageTimings) + ", totalMs=" +
+                RuntimeElapsedMilliseconds(runtimeContractStarted).ToString(
+                    "F2", CultureInfo.InvariantCulture) + ".");
             MarkFailure(scene, root, failureReason);
             return;
         }
@@ -1251,12 +1276,37 @@ public sealed class OperatorKillHousePlugin : BasePlugin
         aiSightOcclusionPending = sightDeferred;
         if (sightDeferred) nextAiSightAuditFrame = Time.frameCount + 30;
         if (!PublishRuntimeContractReady(scene, root)) return;
+        AppendRuntimeStageTiming(runtimeStageTimings, "publish-ready",
+            ref runtimeContractCheckpoint);
         log.LogInfo("Vektor Kill House runtime gate passed: scene=" + scene.name +
                     ", nativeOnly=true, fullDoorV2=true, stateAwareFixtureLighting=true, vanillaIndoorRender=true, fixedSafeRoom=true, tacticalEnemyPositions=" +
                     tacticalEnemyMarkers + "/" + tacticalEnemyMarkers +
                     ", certifiedSafeEnemyCapacity=" + certifiedSafeCapacity +
                     ", vanillaIdleBehavior=Wander12m, frameworkInitialResponseDelay=3-6s, aiSightOcclusion=" +
-                    (sightPassed ? "passed" : "deferred-until-resident-ai") + ".");
+                    (sightPassed ? "passed" : "deferred-until-resident-ai") +
+                    ", stageTimings=[" + string.Join(",", runtimeStageTimings) +
+                    "], totalMs=" + RuntimeElapsedMilliseconds(
+                        runtimeContractStarted).ToString(
+                            "F2", CultureInfo.InvariantCulture) + ".");
+    }
+
+    private static void AppendRuntimeStageTiming(
+        ICollection<string> timings,
+        string stage,
+        ref long checkpoint)
+    {
+        long now = System.Diagnostics.Stopwatch.GetTimestamp();
+        double elapsed = (now - checkpoint) * 1000d /
+            System.Diagnostics.Stopwatch.Frequency;
+        timings.Add(stage + "=" + elapsed.ToString(
+            "F2", CultureInfo.InvariantCulture) + "ms");
+        checkpoint = now;
+    }
+
+    private static double RuntimeElapsedMilliseconds(long started)
+    {
+        return (System.Diagnostics.Stopwatch.GetTimestamp() - started) * 1000d /
+            System.Diagnostics.Stopwatch.Frequency;
     }
 
     private bool EnsureIndoorRenderContract(GameObject root)
@@ -1610,7 +1660,13 @@ public sealed class OperatorKillHousePlugin : BasePlugin
             light.range = 11.5f;
             light.spotAngle = 58f;
             light.innerSpotAngle = 38f;
-            light.shadows = LightShadows.Soft;
+            bool primaryLitFixture = lit && string.Equals(
+                light.name,
+                "ROOM_LOCAL_FIXTURE_LIGHT_00",
+                StringComparison.Ordinal);
+            light.shadows = primaryLitFixture
+                ? LightShadows.Soft
+                : LightShadows.None;
             light.useColorTemperature = true;
             light.colorTemperature = intendedTemperature;
             light.intensity = intendedLumens;
@@ -1657,6 +1713,11 @@ public sealed class OperatorKillHousePlugin : BasePlugin
             float mapLocalY = root.transform.InverseTransformPoint(light.transform.position).y;
             string holderName = light.transform.parent == null ? string.Empty : light.transform.parent.name;
             string suffix = light.name.Substring("ROOM_LOCAL_FIXTURE_LIGHT_".Length);
+            LightShadows expectedShadows =
+                holderName.EndsWith("_STATE_LIT", StringComparison.Ordinal) &&
+                string.Equals(suffix, "00", StringComparison.Ordinal)
+                    ? LightShadows.Soft
+                    : LightShadows.None;
             Transform fixture = light.transform.parent == null ? null :
                 light.transform.parent.GetComponentsInChildren<Transform>(true)
                     .FirstOrDefault(item => string.Equals(item.name,
@@ -1679,7 +1740,7 @@ public sealed class OperatorKillHousePlugin : BasePlugin
             bool valid = pairedLights.Length == 1 && pairedLights[0] == light && pairedData.Length == 1 &&
                           hd != null && hd.enabled && hd.gameObject == light.gameObject &&
                           hd.legacyLight != null && hd.legacyLight == light &&
-                          stateValid && light.type == LightType.Spot && light.shadows == LightShadows.Soft &&
+                          stateValid && light.type == LightType.Spot && light.shadows == expectedShadows &&
                           fixtureMountValid &&
                           light.range >= 11f && light.spotAngle >= 56f && light.spotAngle <= 60f &&
                          light.useColorTemperature && light.colorTemperature >= 4200f &&
@@ -1705,6 +1766,8 @@ public sealed class OperatorKillHousePlugin : BasePlugin
         }
         int pointLights = lights.Count(light => light.type == LightType.Point);
         int spotLights = lights.Count(light => light.type == LightType.Spot);
+        int shadowCastingFixtureLights = local.Count(light =>
+            light.enabled && light.shadows != LightShadows.None);
         int nonFixtureSpotLights = lights.Count(light => light.type == LightType.Spot &&
             !light.name.StartsWith("ROOM_LOCAL_FIXTURE_LIGHT_", StringComparison.Ordinal));
         Light[] loadedDirectionals = FindLoadedDirectionalLights();
@@ -1744,6 +1807,7 @@ public sealed class OperatorKillHousePlugin : BasePlugin
                     ", fixtureTreeHdrpData=" + fixtureTreeHdrpData.Length +
                     ", orphanFixtureHdrpData=" + orphanFixtureHdrpData +
                     ", pointLights=" + pointLights + ", spotLights=" + spotLights +
+                    ", shadowCastingFixtureLights=" + shadowCastingFixtureLights +
                     ", nonFixtureSpotLights=" + nonFixtureSpotLights +
                     ", enabledDirectional=" + directional.Count(light => light.enabled) +
                     ", loadedDirectionals=" + loadedDirectionals.Length +
@@ -4961,6 +5025,11 @@ public sealed class OperatorKillHousePlugin : BasePlugin
                     out WeaponV3 activeWeapon)) return false;
             EnhanceLiveWeaponIllumination(activeRoot, activeWeapon);
             var details = new List<string>();
+            bool muzzleFlashPassed = AuditNativeMuzzleFlashContract(
+                activeRoot,
+                activeWeapon,
+                out string muzzleFlashDetail);
+            details.Add("MUZZLE{" + muzzleFlashDetail + "}");
             int hwsCount = 0;
             int reflexCount = 0;
             int irCount = 0;
@@ -5084,7 +5153,8 @@ public sealed class OperatorKillHousePlugin : BasePlugin
                                ",weapons=" + weaponCount + ",globalMultiplier=" +
                                (globalFlashlightMultiplier == null ? "missing" :
                                    globalFlashlightMultiplier.MultiplierValue.ToString("F2", CultureInfo.InvariantCulture)) +
-                               ",boosts=reticleNormal:" +
+                                ",nativeMuzzleFlash=" + muzzleFlashPassed +
+                                ",boosts=reticleNormal:" +
                                IndoorReticleNormalBrightnessMultiplier.ToString("F1", CultureInfo.InvariantCulture) +
                                "/reticleNvg:" +
                                IndoorReticleNvgBrightnessMultiplier.ToString("F1", CultureInfo.InvariantCulture) +
@@ -5100,10 +5170,11 @@ public sealed class OperatorKillHousePlugin : BasePlugin
                                hwsReticleSizeStates.Count + "/laserControllers:" +
                                visibleIrLaserBoostStates.Count + "/laserLights:" + visibleLaserLightBoostStates.Count +
                                ",details=[" + string.Join(" | ", details) + "]";
-            if (string.Equals(signature, lastOpticAuditSignature, StringComparison.Ordinal)) return true;
+            if (string.Equals(signature, lastOpticAuditSignature, StringComparison.Ordinal))
+                return muzzleFlashPassed;
             lastOpticAuditSignature = signature;
             log.LogInfo("Vektor Kill House live optic/illuminator audit: " + signature + ".");
-            return true;
+            return muzzleFlashPassed;
         }
         catch (Exception exception)
         {
@@ -5111,6 +5182,99 @@ public sealed class OperatorKillHousePlugin : BasePlugin
             if (string.Equals(signature, lastOpticAuditSignature, StringComparison.Ordinal)) return false;
             lastOpticAuditSignature = signature;
             log.LogWarning("Vektor Kill House live optic/illuminator audit deferred: " + signature + ".");
+            return false;
+        }
+    }
+
+    private bool AuditNativeMuzzleFlashContract(
+        GameObject activeRoot,
+        WeaponV3 activeWeapon,
+        out string detail)
+    {
+        detail = "unavailable";
+        if (activeRoot == null || activeWeapon == null)
+            return false;
+        try
+        {
+            bool owned;
+            try { owned = activeWeapon.isOwned; }
+            catch { owned = false; }
+            MuzzleFlash[] flashes =
+                activeRoot.GetComponentsInChildren<MuzzleFlash>(true);
+            MuzzleDevice[] devices =
+                activeRoot.GetComponentsInChildren<MuzzleDevice>(true);
+            int particles = 0;
+            int flashObjects = 0;
+            int dynamicLights = 0;
+            int validControllers = 0;
+            var receiverMasks = new List<int>();
+            foreach (MuzzleFlash flash in flashes)
+            {
+                if (flash == null)
+                    continue;
+                if (flash.m_muzzleFlashParticleSystem != null)
+                    particles++;
+                int controllerFlashObjects = flash.flashObjects == null
+                    ? 0
+                    : flash.flashObjects.Length;
+                flashObjects += controllerFlashObjects;
+                Light light = flash.flash;
+                bool dynamicLight = light != null &&
+                    light.type != LightType.Directional &&
+                    light.cullingMask != 0 && light.range > .01f;
+                if (dynamicLight)
+                {
+                    dynamicLights++;
+                    receiverMasks.Add(light.cullingMask);
+                }
+                if (flash.flashTime > 0f && flash.muzzleFlashIntensity > 0f &&
+                    (flash.m_muzzleFlashParticleSystem != null ||
+                     controllerFlashObjects > 0) && dynamicLight)
+                {
+                    validControllers++;
+                }
+            }
+
+            int reactiveReceivers = 0;
+            Scene scene = FindLoadedSceneByHandle(pendingSceneHandle);
+            GameObject mapRoot = IsKillHouseScene(scene) ? FindOwnedRoot(scene) : null;
+            if (mapRoot != null && receiverMasks.Count > 0)
+            {
+                foreach (Renderer renderer in mapRoot.GetComponentsInChildren<Renderer>(true))
+                {
+                    if (renderer == null || !renderer.enabled ||
+                        !receiverMasks.Any(mask =>
+                            (mask & (1 << renderer.gameObject.layer)) != 0))
+                    {
+                        continue;
+                    }
+                    bool litMaterial = renderer.sharedMaterials.Any(material =>
+                        material != null && material.shader != null &&
+                        (string.Equals(material.shader.name, ResidentShaderName,
+                             StringComparison.Ordinal) ||
+                         string.Equals(material.shader.name,
+                             MilkLitTemplateShaderName,
+                             StringComparison.Ordinal)));
+                    if (litMaterial)
+                        reactiveReceivers++;
+                }
+            }
+
+            bool passed = owned && flashes.Length > 0 && validControllers > 0 &&
+                dynamicLights > 0 && reactiveReceivers > 0;
+            detail = "passed=" + passed + ", owned=" + owned +
+                ", devices=" + devices.Length + ", controllers=" +
+                flashes.Length + "/valid=" + validControllers +
+                ", particles=" + particles + ", flashObjects=" +
+                flashObjects + ", dynamicLights=" + dynamicLights +
+                ", reactiveHdrpReceivers=" + reactiveReceivers +
+                ", receiverRule=sharedMaterial+light-culling-mask";
+            return passed;
+        }
+        catch (Exception exception)
+        {
+            detail = "error=" + exception.GetType().Name + ":" +
+                exception.Message;
             return false;
         }
     }

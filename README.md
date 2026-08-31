@@ -13,13 +13,13 @@ Related projects:
 
 | Component | Version/status |
 | --- | --- |
-| Map package | `0.1.24` |
-| Runtime companion | `0.1.20` (BepInEx and MelonLoader variants) |
-| Required Modded Operations | `0.3.31` |
+| Map package | `0.1.25` |
+| Runtime companion | `0.1.21` (BepInEx and MelonLoader variants) |
+| Required Modded Operations | `0.3.32` |
 | Bundled internal Operator Mod API | `0.2.0-alpha.7` |
 | PVE | 1-4 players; selectable 10-60 enemies |
 | PVP | 2-12 players; six authored spawns per team |
-| Multiplayer status | Local BepInEx and MelonLoader `PROVEN-RUNTIME`; separate-PC online proof pending |
+| Multiplayer status | Current BepInEx candidate `PROVEN-RUNTIME` locally; current MelonLoader build/static proof and separate-PC online proof pending |
 | Public release status | Source checkpoint only; no binary release from this repo |
 
 Protocol v6 gives both PVE and PVP exact content, scene-generation, companion,
@@ -35,6 +35,10 @@ supported until a real host and separate remote complete its paired-log matrix.
 - Separate PVP operation for 2-12 players with six spawns per team.
 - Native OPERATOR doors, furniture, warehouse presentation, lighting, and post-processing.
 - Visible overhead fixtures mounted 0.080 m below the measured interior roof underside.
+- Every active fixture lights nearby surfaces; one primary fixture per lit room
+  owns soft shadows to avoid redundant indoor shadow maps.
+- Native weapon muzzle particles, flash objects, dynamic lights, and lit surface
+  receivers are validated after local weapon authority becomes ready.
 - Preloaded decompressed door audio to reduce the hitch on the first doors opened.
 - One owner-local insertion placement per exact scene generation; no periodic
   teleport-to-spawn maintenance after gameplay begins.
@@ -59,7 +63,7 @@ supported until a real host and separate remote complete its paired-log matrix.
 
 - A legally owned, installed copy of OPERATOR.
 - exactly one supported BepInEx or MelonLoader runtime plus generated interop assemblies.
-- OPERATOR: Modded Operations `0.3.31` with its bundled internal API alpha.7.
+- OPERATOR: Modded Operations `0.3.32` with its bundled internal API alpha.7.
 - Unity `6000.3.8f1` with HDRP `17.3.0`.
 - Native asset inputs extracted from your own installed game.
 

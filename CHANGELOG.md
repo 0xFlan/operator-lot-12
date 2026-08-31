@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.1.25 / companion 0.1.21 performance and lighting candidate — 2026-08-30
+
+- Keep every visible ceiling fixture and its contribution to walls and floors,
+  while limiting dynamic soft-shadow ownership to one primary fixture per lit
+  room. Dim and secondary fixtures remain real lights without redundant shadow
+  maps.
+- Audit the equipped owned firearm's native `MuzzleFlash` graph, including its
+  particle/flash object, non-directional dynamic light, light range/culling
+  mask, and HDRP/Lit receivers. The companion does not create a synthetic
+  effect or alter OPERATOR's bullets, hits, damage, or recoil.
+- Time each exact scene-preparation stage so cold bundle, material, navigation,
+  spawn, and ready-marker cost can be distinguished in logs.
+- Require Modded Operations `0.3.32`, which throttles stable maintenance,
+  retires resolved laptop/weapon scans, and preserves per-frame PVE readiness
+  barriers.
+- Retain the private 10-60 selector. Sixty native AI remains an opt-in stress
+  setting; it is not described as lag-free on every CPU/GPU.
+- Rebuild and load-verify all ten scenes and both bundles; pass the repository
+  audit and zero-warning BepInEx/MelonLoader companion builds.
+
 ## 0.1.24 / companion 0.1.20 runtime-fix candidate — 2026-08-30
 
 - Corrected every overhead fixture to mount from the warehouse roof's interior

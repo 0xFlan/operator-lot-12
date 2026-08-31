@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
-    <Version>0.1.20</Version>
+    <Version>0.1.21</Version>
     <OperatorLoader Condition="'$(OperatorLoader)' == ''">BepInEx</OperatorLoader>
     <AssemblyName Condition="'$(OperatorLoader)' != 'MelonLoader'">OperatorKillHouse</AssemblyName>
     <AssemblyName Condition="'$(OperatorLoader)' == 'MelonLoader'">OperatorKillHouse.MelonLoader</AssemblyName>
@@ -20,6 +20,8 @@
     <OperatorModApiRoot Condition="'$(OperatorModApiRoot)' == '' and Exists('$(MSBuildThisFileDirectory)..\..\..\..\..\Operator_GroceryStore_Mod\_public_release\operator-mod-api\src\OperatorModAPI\OperatorModAPI.csproj')">$(MSBuildThisFileDirectory)..\..\..\..\..\Operator_GroceryStore_Mod\_public_release\operator-mod-api</OperatorModApiRoot>
     <MelonLoaderDir Condition="'$(MelonLoaderDir)' == '' and Exists('$(MSBuildThisFileDirectory)..\..\..\Operator_GroceryStore_Mod\_dependencies\MelonLoader\v0.7.3\MelonLoader\net6\MelonLoader.dll')">$(MSBuildThisFileDirectory)..\..\..\Operator_GroceryStore_Mod\_dependencies\MelonLoader\v0.7.3\MelonLoader\net6</MelonLoaderDir>
     <MelonLoaderDir Condition="'$(MelonLoaderDir)' == '' and Exists('$(MSBuildThisFileDirectory)..\..\..\..\..\Operator_GroceryStore_Mod\_dependencies\MelonLoader\v0.7.3\MelonLoader\net6\MelonLoader.dll')">$(MSBuildThisFileDirectory)..\..\..\..\..\Operator_GroceryStore_Mod\_dependencies\MelonLoader\v0.7.3\MelonLoader\net6</MelonLoaderDir>
+    <OperatorInteropDir Condition="'$(OperatorLoader)' != 'MelonLoader'">$(OperatorGameDir)\BepInEx\interop</OperatorInteropDir>
+    <OperatorInteropDir Condition="'$(OperatorLoader)' == 'MelonLoader'">$(OperatorGameDir)\MelonLoader\Il2CppAssemblies</OperatorInteropDir>
     <DefineConstants Condition="'$(OperatorLoader)' == 'MelonLoader'">$(DefineConstants);MELONLOADER</DefineConstants>
     <IntermediateOutputPath>obj\$(OperatorLoader)\$(Configuration)\</IntermediateOutputPath>
     <OutputPath Condition="'$(OperatorLoader)' == 'MelonLoader'">bin\$(Configuration)\MelonLoader\</OutputPath>
@@ -47,21 +49,26 @@
     <Reference Include="MelonLoader" Condition="'$(OperatorLoader)' == 'MelonLoader'"><HintPath>$(MelonLoaderDir)\MelonLoader.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="Il2CppInterop.Runtime" Condition="'$(OperatorLoader)' != 'MelonLoader'"><HintPath>$(OperatorGameDir)\BepInEx\core\Il2CppInterop.Runtime.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="Il2CppInterop.Runtime" Condition="'$(OperatorLoader)' == 'MelonLoader'"><HintPath>$(MelonLoaderDir)\Il2CppInterop.Runtime.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="Il2Cppmscorlib"><HintPath>$(OperatorGameDir)\BepInEx\interop\Il2Cppmscorlib.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="Il2CppSystem"><HintPath>$(OperatorGameDir)\BepInEx\interop\Il2CppSystem.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="Il2CppSystem.Core"><HintPath>$(OperatorGameDir)\BepInEx\interop\Il2CppSystem.Core.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="AstarPathfindingProject"><HintPath>$(OperatorGameDir)\BepInEx\interop\AstarPathfindingProject.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="Assembly-CSharp"><HintPath>$(OperatorGameDir)\BepInEx\interop\Assembly-CSharp.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="Assembly-CSharp-firstpass"><HintPath>$(OperatorGameDir)\BepInEx\interop\Assembly-CSharp-firstpass.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="Mirror"><HintPath>$(OperatorGameDir)\BepInEx\interop\Mirror.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="PackageTools"><HintPath>$(OperatorGameDir)\BepInEx\interop\PackageTools.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="Drawing"><HintPath>$(OperatorGameDir)\BepInEx\interop\Drawing.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="Unity.RenderPipelines.HighDefinition.Runtime"><HintPath>$(OperatorGameDir)\BepInEx\interop\Unity.RenderPipelines.HighDefinition.Runtime.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="Unity.RenderPipelines.Core.Runtime"><HintPath>$(OperatorGameDir)\BepInEx\interop\Unity.RenderPipelines.Core.Runtime.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="UnityEngine.CoreModule"><HintPath>$(OperatorGameDir)\BepInEx\interop\UnityEngine.CoreModule.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="UnityEngine.AudioModule"><HintPath>$(OperatorGameDir)\BepInEx\interop\UnityEngine.AudioModule.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="UnityEngine.AssetBundleModule"><HintPath>$(OperatorGameDir)\BepInEx\interop\UnityEngine.AssetBundleModule.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="UnityEngine.PhysicsModule"><HintPath>$(OperatorGameDir)\BepInEx\interop\UnityEngine.PhysicsModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Il2Cppmscorlib"><HintPath>$(OperatorInteropDir)\Il2Cppmscorlib.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Il2CppSystem"><HintPath>$(OperatorInteropDir)\Il2CppSystem.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Il2CppSystem.Core"><HintPath>$(OperatorInteropDir)\Il2CppSystem.Core.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="AstarPathfindingProject" Condition="'$(OperatorLoader)' != 'MelonLoader'"><HintPath>$(OperatorInteropDir)\AstarPathfindingProject.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Il2CppAstarPathfindingProject" Condition="'$(OperatorLoader)' == 'MelonLoader'"><HintPath>$(OperatorInteropDir)\Il2CppAstarPathfindingProject.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Assembly-CSharp"><HintPath>$(OperatorInteropDir)\Assembly-CSharp.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Assembly-CSharp-firstpass"><HintPath>$(OperatorInteropDir)\Assembly-CSharp-firstpass.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Mirror" Condition="'$(OperatorLoader)' != 'MelonLoader'"><HintPath>$(OperatorInteropDir)\Mirror.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Il2CppMirror" Condition="'$(OperatorLoader)' == 'MelonLoader'"><HintPath>$(OperatorInteropDir)\Il2CppMirror.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="PackageTools" Condition="'$(OperatorLoader)' != 'MelonLoader'"><HintPath>$(OperatorInteropDir)\PackageTools.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Il2CppPackageTools" Condition="'$(OperatorLoader)' == 'MelonLoader'"><HintPath>$(OperatorInteropDir)\Il2CppPackageTools.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Drawing" Condition="'$(OperatorLoader)' != 'MelonLoader'"><HintPath>$(OperatorInteropDir)\Drawing.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Il2CppDrawing" Condition="'$(OperatorLoader)' == 'MelonLoader'"><HintPath>$(OperatorInteropDir)\Il2CppDrawing.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Unity.RenderPipelines.HighDefinition.Runtime"><HintPath>$(OperatorInteropDir)\Unity.RenderPipelines.HighDefinition.Runtime.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Unity.RenderPipelines.Core.Runtime"><HintPath>$(OperatorInteropDir)\Unity.RenderPipelines.Core.Runtime.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.CoreModule"><HintPath>$(OperatorInteropDir)\UnityEngine.CoreModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.AudioModule"><HintPath>$(OperatorInteropDir)\UnityEngine.AudioModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.AssetBundleModule"><HintPath>$(OperatorInteropDir)\UnityEngine.AssetBundleModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.PhysicsModule"><HintPath>$(OperatorInteropDir)\UnityEngine.PhysicsModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.ParticleSystemModule"><HintPath>$(OperatorInteropDir)\UnityEngine.ParticleSystemModule.dll</HintPath><Private>false</Private></Reference>
   </ItemGroup>
   <Target Name="RequireResolvedLoaderInputs" BeforeTargets="PrepareForBuild">
     <Error Condition="'$(OperatorModApiRoot)' == ''" Text="Operator Mod API root could not be resolved from the private or public Kill House source layout. Set OperatorModApiRoot explicitly." />

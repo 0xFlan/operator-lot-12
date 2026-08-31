@@ -100,21 +100,49 @@ def main() -> int:
     source_path = ROOT / "source/runtime/OperatorKillHousePlugin.cs"
     if source_path.is_file():
         data = source_path.read_bytes()
-        if len(data) != 374240 or sha256_bytes(data) != (
-            "9693703119DD1733A0C5D36F1D783743B6E211F37FF4D68F72E4AA4F7FCE4950"
+        if len(data) != 381874 or sha256_bytes(data) != (
+            "FCEFDB428D05744700412D9B1B5C90B8DF378F5EA29918881C37D1EBA8C7A1D5"
         ):
-            errors.append("authored companion source identity does not match checkpoint 0.1.20")
+            errors.append("authored companion source identity does not match checkpoint 0.1.21")
         text = data.decode("utf-8", errors="replace")
         for fragment in (
             '[BepInDependency("operator.modded-operations")]',
             '[BepInDependency("operator.modapi", "0.2.0-alpha.7")]',
             'public const string PluginGuid = "operator.vektor-killhouse";',
-            'public const string PluginVersion = "0.1.20";',
+            'public const string PluginVersion = "0.1.21";',
             'private const string ModdedOperationsReadyMarkerName = "MODDED_OPERATIONS_RUNTIME_CONTRACT_READY";',
             'private const string ModdedOperationsFailureMarkerName = "MODDED_OPERATIONS_RUNTIME_CONTRACT_FAILED";',
+            "AuditNativeMuzzleFlashContract(",
+            "activeRoot.GetComponentsInChildren<MuzzleFlash>(true)",
+            "flash.m_muzzleFlashParticleSystem",
+            "light.type != LightType.Directional",
+            "renderer.sharedMaterials.Any",
+            "AppendRuntimeStageTiming(runtimeStageTimings, \"publish-ready\"",
         ):
             if fragment not in text:
                 errors.append(f"companion runtime contract is missing: {fragment}")
+        for forbidden in (
+            "AddComponent<MuzzleFlash>",
+            "AddComponent<Projectile>",
+            "AddComponent<Bullet>",
+        ):
+            if forbidden in text:
+                errors.append(f"companion must not synthesize native weapon effects or ballistics: {forbidden}")
+
+    builder_path = (
+        ROOT
+        / "source/unity_project/Assets/VektorKillHouse/Editor/KillHouseVariantBuilder.cs"
+    )
+    if builder_path.is_file():
+        builder = builder_path.read_text(encoding="utf-8")
+        for fragment in (
+            "state == RoomLightState.Lit && ordinal == 0",
+            "shadowCastingFixtureLights == litRooms",
+            '"expectedShadowCastingFixtureLights"',
+            "one-soft-shadow-owner-per-lit-room",
+        ):
+            if fragment not in builder:
+                errors.append(f"authored lighting performance contract is missing: {fragment}")
 
     manifest_path = (
         ROOT
@@ -127,22 +155,22 @@ def main() -> int:
         framework = matrix.get("runtimeCompatibility", {}).get("framework", {})
         expected_framework = {
             "pluginGuid": "operator.modded-operations",
-            "version": "0.3.31",
+            "version": "0.3.32",
             "fileName": "OperatorModdedOperations.dll",
-            "bytes": 642560,
-            "sha256": "54890536492e645050c7c2125f7d1ff4ffc23c3be23ebf95a2294e648439deb7",
+            "bytes": 644096,
+            "sha256": "57ce5f1657cabdc5b1785013cf95d22913027eaee0d8a08000cc31ad1dfb7d91",
             "melonLoaderFileName": "OperatorModdedOperations.MelonLoader.dll",
-            "melonLoaderBytes": 644096,
-            "melonLoaderSha256": "7bf50a2233d001e00ff151d1746ea98a7e111cd4c4e36839f894b713f5759571",
+            "melonLoaderBytes": 645632,
+            "melonLoaderSha256": "fa679a7ac2f9be3543022b88bdbf7af8756f8d7c544a656e61f15f3e3ec73cf3",
         }
         if framework != expected_framework:
-            errors.append("design matrix framework identity does not match checkpoint 0.3.31")
+            errors.append("design matrix framework identity does not match checkpoint 0.3.32")
 
     if manifest_path.is_file():
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         if manifest.get("packageId") != "community.vektor-modular-killhouse":
             errors.append("manifest package ID changed")
-        if manifest.get("version") != "0.1.24":
+        if manifest.get("version") != "0.1.25":
             errors.append("manifest package version changed")
         maps = manifest.get("maps", [])
         if len(maps) != 1 or len(maps[0].get("sceneVariants", [])) != 10:

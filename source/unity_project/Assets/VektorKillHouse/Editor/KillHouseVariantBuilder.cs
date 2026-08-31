@@ -1729,7 +1729,13 @@ public static class KillHouseVariantBuilder
                 light.range = 11.5f;
                 light.spotAngle = 58f;
                 light.innerSpotAngle = 38f;
-                light.shadows = LightShadows.Soft;
+                // Keep the room fully illuminated while limiting HDRP shadow-map
+                // work to one fixture per lit room. Dim fixtures remain visible
+                // and continue to light walls/floors, but do not spend a shadow
+                // atlas entry; dark fixtures stay disabled.
+                light.shadows = state == RoomLightState.Lit && ordinal == 0
+                    ? LightShadows.Soft
+                    : LightShadows.None;
                 light.shadowBias = .035f;
                 light.shadowNormalBias = .25f;
                 light.shadowNearPlane = .1f;
@@ -1773,11 +1779,19 @@ public static class KillHouseVariantBuilder
     private static bool FixtureLightValid(Light light, Collider[] warehouseRoofColliders)
     {
         if (light == null || light.transform.parent == null || light.type != LightType.Spot ||
-            light.shadows != LightShadows.Soft || light.range < 11f ||
+            light.range < 11f ||
             light.spotAngle < 56f || light.spotAngle > 60f || !light.useColorTemperature ||
             light.colorTemperature < 4200f || light.colorTemperature > 4400f)
             return false;
         string suffix = light.name.Substring("ROOM_LOCAL_FIXTURE_LIGHT_".Length);
+        bool litHolder = light.transform.parent.name.EndsWith(
+            "_STATE_LIT", StringComparison.Ordinal);
+        LightShadows expectedShadows = litHolder &&
+            string.Equals(suffix, "00", StringComparison.Ordinal)
+                ? LightShadows.Soft
+                : LightShadows.None;
+        if (light.shadows != expectedShadows)
+            return false;
         Transform fixture = light.transform.parent.GetComponentsInChildren<Transform>(true)
             .FirstOrDefault(item => string.Equals(item.name,
                 "NATIVE_Lamp_fluorescent_B_" + suffix, StringComparison.Ordinal));
@@ -3899,6 +3913,8 @@ public static class KillHouseVariantBuilder
         int darkRooms = lightHolders.Count(item => item.name.EndsWith("_STATE_DARK", StringComparison.Ordinal));
         int safeRoomLit = lightHolders.Count(item => item.name.StartsWith("ROOM_LIGHT_00_SAFE_", StringComparison.Ordinal) &&
             item.name.EndsWith("_STATE_LIT", StringComparison.Ordinal));
+        int shadowCastingFixtureLights = fixtureLights.Count(light =>
+            light.enabled && light.shadows != LightShadows.None);
         Collider[] warehouseRoofColliders = FindWarehouseRoofColliders(warehouseShell);
         int invalidFixtureLights = fixtureLights.Count(light => !FixtureLightValid(light, warehouseRoofColliders));
         int invalidFixtureVisuals = fixtureVisuals.Count(item => !FixtureVisualValid(item, warehouseRoofColliders));
@@ -3976,7 +3992,8 @@ public static class KillHouseVariantBuilder
                       fixtureLights.Length == expectedFixtureLights && pointLights == 0 && spotLights == fixtureLights.Length &&
                       invalidFixtureLights == 0 && fixtureVisuals.Length == expectedFixtureLights &&
                       invalidFixtureVisuals == 0 && lightHolders.Length == cells.Length && safeRoomLit == 1 &&
-                      litRooms >= 5 && dimRooms >= 4 && darkRooms >= 7 && indoorVolumeValid &&
+                       shadowCastingFixtureLights == litRooms &&
+                       litRooms >= 5 && dimRooms >= 4 && darkRooms >= 7 && indoorVolumeValid &&
                       blackWarehouseEnvironment &&
                       transforms.Count(item => item.name == MapMarker) == 1 &&
                       pveSpawnSetMarkers == 1 && pvpSpawnSetMarkers == 1 && spawnSetMarkers == 2;
@@ -4321,6 +4338,8 @@ public static class KillHouseVariantBuilder
             ["fluorescentExposureWeight"] = KillHouseNativeMaterialBuilder.KillHouseFluorescentExposureWeight,
             ["nonFixturePointLights"] = pointLights,
             ["invalidFixtureLights"] = invalidFixtureLights,
+            ["shadowCastingFixtureLights"] = shadowCastingFixtureLights,
+            ["expectedShadowCastingFixtureLights"] = litRooms,
             ["litRoomCount"] = litRooms,
             ["dimRoomCount"] = dimRooms,
             ["darkRoomCount"] = darkRooms,
@@ -4329,7 +4348,7 @@ public static class KillHouseVariantBuilder
             ["blackWarehouseEnvironment"] = blackWarehouseEnvironment,
             ["indoorVolumeDonor"] = "Assets/Scenes/PVP Woods Warehouse.unity::Global Volume Profile 1",
             ["indoorLutDonor"] = "sharedassets2.assets::AgX - PunchyPowerfulMix",
-            ["lightingContract"] = "black-sky-zero-ambient-zero-reflection-plus-disabled-directional-sentinel-plus-visible-downward-facing-vanilla-fluorescent-tubes-at-307.2-lit-9.6-dim-zero-dark-surface-emission-plus-lit-dim-dark-spot-fixtures-plus-exact-unchanged-pvp-warehouse-bloom-scatter-and-screen-space-lens-flare-streak-contract",
+            ["lightingContract"] = "black-sky-zero-ambient-zero-reflection-plus-disabled-directional-sentinel-plus-visible-downward-facing-vanilla-fluorescent-tubes-at-307.2-lit-9.6-dim-zero-dark-surface-emission-plus-lit-dim-dark-spot-fixtures-plus-one-soft-shadow-owner-per-lit-room-plus-exact-unchanged-pvp-warehouse-bloom-scatter-and-screen-space-lens-flare-streak-contract",
             ["visibleBuiltinPrimitiveMeshes"] = primitiveMeshes,
             ["nativeAssetOnly"] = true,
             ["fixedSafeRoomModule"] = "KH_SAFE_ROOM_V1",
