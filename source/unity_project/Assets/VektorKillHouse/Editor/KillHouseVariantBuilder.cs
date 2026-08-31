@@ -23,8 +23,9 @@ public static class KillHouseVariantBuilder
     private const float WallModuleWidth = 2f;
     private const float PartitionHeight = 3.0f;
     private const float WarehouseRoofHeight = 11.35f;
-    private const float WarehouseFixtureRoofGap = .04f;
+    private const float WarehouseFixtureRoofGap = .08f;
     private const float WarehouseFixtureLightDrop = .18f;
+    private static readonly Vector3 WarehouseFixtureVisualScale = new Vector3(1.75f, 2.5f, 1.5f);
     private const float WarehouseMargin = 4.0f;
     private const float WarehouseGroundElevation = -.015f;
     private const float WarehouseFixtureSpacing = 8.0f;
@@ -1703,14 +1704,16 @@ public static class KillHouseVariantBuilder
                 GameObject visual = Instantiate(KillHouseNativePrefabBuilder.Load(fixture), holder,
                     "NATIVE_" + fixture + "_" + ordinal.ToString("00"));
                 AlignCeiling(visual, fixtureCenter,
-                    Quaternion.Euler(-90f, ((row + column + index) & 1) == 0 ? 0f : 90f, 0f), Vector3.one * 1.5f);
+                    Quaternion.Euler(-90f, ((row + column + index) & 1) == 0 ? 0f : 90f, 0f),
+                    WarehouseFixtureVisualScale);
                 Bounds provisionalBounds = RendererBounds(visual);
-                float roofUnderside = ResolveLowestWarehouseRoofSurface(
+                float roofUnderside = ResolveLowestWarehouseRoofUnderside(
                     warehouseRoofColliders,
                     provisionalBounds);
                 fixtureCenter.y = roofUnderside - WarehouseFixtureRoofGap;
                 AlignCeiling(visual, fixtureCenter,
-                    Quaternion.Euler(-90f, ((row + column + index) & 1) == 0 ? 0f : 90f, 0f), Vector3.one * 1.5f);
+                    Quaternion.Euler(-90f, ((row + column + index) & 1) == 0 ? 0f : 90f, 0f),
+                    WarehouseFixtureVisualScale);
                 GameObject lightObject = Child(holder.gameObject, "ROOM_LOCAL_FIXTURE_LIGHT_" + ordinal.ToString("00"));
                 lightObject.transform.position = new Vector3(
                     fixtureCenter.x,
@@ -1798,7 +1801,8 @@ public static class KillHouseVariantBuilder
         if (fixture == null) return false;
         // Lamp_fluorescent_B is authored in XY; its local -Z is the visible underside.
         // Match the installed vanilla fixture orientation so that underside faces the player.
-        if (Vector3.Dot(fixture.TransformDirection(Vector3.back).normalized, Vector3.down) < .98f) return false;
+        if (Vector3.Dot(fixture.TransformDirection(Vector3.back).normalized, Vector3.down) < .98f ||
+            Vector3.Distance(fixture.localScale, WarehouseFixtureVisualScale) > .01f) return false;
         Renderer[] renderers = fixture.GetComponentsInChildren<Renderer>(true);
         return TryFixtureRoofGap(fixture, warehouseRoofColliders, out float roofGap, out _) &&
             Mathf.Abs(roofGap - WarehouseFixtureRoofGap) <= .015f &&
@@ -1825,7 +1829,7 @@ public static class KillHouseVariantBuilder
         fixtureTop = bounds.max.y;
         try
         {
-            gap = ResolveLowestWarehouseRoofSurface(roofColliders, bounds) - fixtureTop;
+            gap = ResolveLowestWarehouseRoofUnderside(roofColliders, bounds) - fixtureTop;
             return float.IsFinite(gap);
         }
         catch
@@ -1834,45 +1838,55 @@ public static class KillHouseVariantBuilder
         }
     }
 
-    private static float ResolveLowestWarehouseRoofSurface(Collider[] roofColliders, Bounds fixtureBounds)
+    private static float ResolveLowestWarehouseRoofUnderside(Collider[] roofColliders, Bounds fixtureBounds)
     {
-        float minX = fixtureBounds.min.x;
-        float maxX = fixtureBounds.max.x;
-        float minZ = fixtureBounds.min.z;
-        float maxZ = fixtureBounds.max.z;
-        Vector2[] samples =
-        {
-            new Vector2(fixtureBounds.center.x, fixtureBounds.center.z),
-            new Vector2(minX, minZ), new Vector2(minX, maxZ),
-            new Vector2(maxX, minZ), new Vector2(maxX, maxZ),
-            new Vector2(minX, fixtureBounds.center.z), new Vector2(maxX, fixtureBounds.center.z),
-            new Vector2(fixtureBounds.center.x, minZ), new Vector2(fixtureBounds.center.x, maxZ)
-        };
+        const int subdivisions = 16;
         float lowest = float.PositiveInfinity;
-        foreach (Vector2 sample in samples)
+        bool originalBackfaceSetting = Physics.queriesHitBackfaces;
+        Physics.queriesHitBackfaces = true;
+        try
         {
-            float surface = ResolveWarehouseRoofSurface(roofColliders, sample.x, sample.y);
-            if (surface < lowest) lowest = surface;
+            for (int xIndex = 0; xIndex <= subdivisions; xIndex++)
+            {
+                float worldX = Mathf.Lerp(fixtureBounds.min.x, fixtureBounds.max.x,
+                    xIndex / (float)subdivisions);
+                for (int zIndex = 0; zIndex <= subdivisions; zIndex++)
+                {
+                    float worldZ = Mathf.Lerp(fixtureBounds.min.z, fixtureBounds.max.z,
+                        zIndex / (float)subdivisions);
+                    float underside = ResolveWarehouseRoofUnderside(roofColliders, worldX, worldZ);
+                    if (underside < lowest) lowest = underside;
+                }
+            }
+        }
+        finally
+        {
+            Physics.queriesHitBackfaces = originalBackfaceSetting;
         }
         if (!float.IsFinite(lowest))
-            throw new InvalidDataException("A fluorescent fixture has no exact warehouse-roof surface above it.");
+            throw new InvalidDataException("A fluorescent fixture has no exact warehouse-roof underside above it.");
         return lowest;
     }
 
-    private static float ResolveWarehouseRoofSurface(Collider[] roofColliders, float worldX, float worldZ)
+    private static float ResolveWarehouseRoofUnderside(Collider[] roofColliders, float worldX, float worldZ)
     {
-        Ray ray = new Ray(new Vector3(worldX, WarehouseRoofHeight + 1f, worldZ), Vector3.down);
+        Collider[] validColliders = roofColliders.Where(collider => collider != null).ToArray();
+        if (validColliders.Length == 0)
+            throw new InvalidDataException("The warehouse roof has no valid collider for underside sampling.");
+        float rayStartY = validColliders.Min(collider => collider.bounds.min.y) - 1f;
+        float rayEndY = validColliders.Max(collider => collider.bounds.max.y) + 1f;
+        Ray ray = new Ray(new Vector3(worldX, rayStartY, worldZ), Vector3.up);
         float nearestDistance = float.PositiveInfinity;
-        foreach (Collider collider in roofColliders)
+        foreach (Collider collider in validColliders)
         {
-            if (collider != null && collider.Raycast(ray, out RaycastHit hit, WarehouseRoofHeight + 3f) &&
+            if (collider.Raycast(ray, out RaycastHit hit, rayEndY - rayStartY) &&
                 hit.distance < nearestDistance)
                 nearestDistance = hit.distance;
         }
         if (!float.IsFinite(nearestDistance))
-            throw new InvalidDataException("No exact warehouse-roof collision surface covers fixture point " +
+            throw new InvalidDataException("No exact warehouse-roof underside covers fixture point " +
                 worldX.ToString("F3") + "," + worldZ.ToString("F3") + ".");
-        return ray.origin.y - nearestDistance;
+        return ray.origin.y + nearestDistance;
     }
 
     private static bool IndoorVolumeValid(Volume volume)

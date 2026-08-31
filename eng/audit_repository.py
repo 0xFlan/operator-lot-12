@@ -100,8 +100,8 @@ def main() -> int:
     source_path = ROOT / "source/runtime/OperatorKillHousePlugin.cs"
     if source_path.is_file():
         data = source_path.read_bytes()
-        if len(data) != 372009 or sha256_bytes(data) != (
-            "3CCAD8A8DF697636A1E2F9238FE3FC2E9F4FDAA18033B2E9807E5FC19BE7C040"
+        if len(data) != 374240 or sha256_bytes(data) != (
+            "9693703119DD1733A0C5D36F1D783743B6E211F37FF4D68F72E4AA4F7FCE4950"
         ):
             errors.append("authored companion source identity does not match checkpoint 0.1.20")
         text = data.decode("utf-8", errors="replace")
@@ -132,8 +132,8 @@ def main() -> int:
             "bytes": 642560,
             "sha256": "54890536492e645050c7c2125f7d1ff4ffc23c3be23ebf95a2294e648439deb7",
             "melonLoaderFileName": "OperatorModdedOperations.MelonLoader.dll",
-            "melonLoaderBytes": 643584,
-            "melonLoaderSha256": "ebcad6563366d614a12c2797622b7639a16377eae829a4279a3914cff498c635",
+            "melonLoaderBytes": 644096,
+            "melonLoaderSha256": "7bf50a2233d001e00ff151d1746ea98a7e111cd4c4e36839f894b713f5759571",
         }
         if framework != expected_framework:
             errors.append("design matrix framework identity does not match checkpoint 0.3.31")

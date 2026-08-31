@@ -13,7 +13,7 @@
   "runtimeCompatibility": {
     "packageContentIdentity": {
       "domain": "OperatorModAPI.ModdedMapPackageContent.v1",
-      "sha256": "f7b432ca85efb77f277b8aee629e79615f1b233e73a632938f523cd019e587e5"
+      "sha256": "59e9a6b7d5cf619d3f154922b9c815901cbc1b86c4dd5d1d3c2b9d3719431d39"
     },
     "framework": {
       "pluginGuid": "operator.modded-operations",
@@ -22,8 +22,8 @@
       "bytes": 642560,
       "sha256": "54890536492e645050c7c2125f7d1ff4ffc23c3be23ebf95a2294e648439deb7",
       "melonLoaderFileName": "OperatorModdedOperations.MelonLoader.dll",
-      "melonLoaderBytes": 643584,
-      "melonLoaderSha256": "ebcad6563366d614a12c2797622b7639a16377eae829a4279a3914cff498c635"
+      "melonLoaderBytes": 644096,
+      "melonLoaderSha256": "7bf50a2233d001e00ff151d1746ea98a7e111cd4c4e36839f894b713f5759571"
     },
     "bundledApi": {
       "delivery": "modded-operations-bundled-only",
@@ -41,21 +41,21 @@
       },
       "melonLoaderHost": {
         "fileName": "OperatorModAPI.MelonLoader.dll",
-        "bytes": 24576,
-        "sha256": "1cc745ab57a18848f15a47c80fce5399c4006fe3ade2c94b449792cfbabff7fa"
+        "bytes": 26112,
+        "sha256": "79a8491d2497c2a72859c6b05dd6ba8e475327fa54db47c0c5f3881f59e6cf6a"
       }
     },
     "runtimeCompanion": {
       "pluginGuid": "operator.vektor-killhouse",
       "pluginVersion": "0.1.20",
-      "bytes": 466944,
-      "sha256": "06a2f7b6b0333ee7bb56175672275b4622f9e82d7bad530fe59924751e1a20f9",
-      "melonLoaderBytes": 467968,
-      "melonLoaderSha256": "d583883c4b2a1d18dd4f1f411496770fc228963eb37153692980932e81cd553b",
-      "runtimeContentId": "653b7bf109675eee0e10464678133076534d4efdb9d829dedf04f2703bdb358f",
+      "bytes": 467968,
+      "sha256": "5fa11f6d3653d82614ef6761f1fac9acccdf76884c8f62b00bd161f5111c0986",
+      "melonLoaderBytes": 468480,
+      "melonLoaderSha256": "23622a849d0b895e528f7852f2d2cad178baf089a2aeef69eb78e6edbd8b26dc",
+      "runtimeContentId": "de3ce267cf38dc847c148db2c1a43aa7e92401bc665a396ddd92517599eec080",
       "sourceFile": "source/runtime/OperatorKillHousePlugin.cs",
-      "sourceBytes": 372009,
-      "sourceSha256": "3ccad8a8df697636a1e2f9238fe3fc2e9f4fdaa18033b2e9807e5fc19be7c040",
+      "sourceBytes": 374240,
+      "sourceSha256": "9693703119dd1733a0c5d36f1d783743b6e211f37ff4d68f72e4aa4f7fce4950",
       "readyMarkerName": "MODDED_OPERATIONS_RUNTIME_CONTRACT_READY",
       "failureMarkerName": "MODDED_OPERATIONS_RUNTIME_CONTRACT_FAILED",
       "sceneScope": "exact-generation-scene",
@@ -303,8 +303,8 @@
   },
   "lighting": {
     "visibleFixtureSource": "Lamp_fluorescent_B",
-    "fixtureRoofMountMode": "nine-sample-exact-warehouse-roof-collider",
-    "fixtureRoofMountGapMeters": 0.04,
+    "fixtureRoofMountMode": "17x17-renderer-footprint-upward-interior-underside-query",
+    "fixtureRoofMountGapMeters": 0.08,
     "fixtureRoofMountToleranceMeters": 0.015,
     "fixtureLightDropBelowTopMeters": 0.18,
     "directionalLightsEnabled": 0,

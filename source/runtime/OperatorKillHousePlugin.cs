@@ -18,6 +18,24 @@ using UnityEngine.Events;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.HighDefinition;
 using UnityEngine.SceneManagement;
+#if MELONLOADER
+using Il2Cpp;
+using Il2CppMirror;
+using BrainFailProductions = Il2CppBrainFailProductions;
+using Mirror = Il2CppMirror;
+using Pathfinding = Il2CppPathfinding;
+using InteractionObject = Il2CppRootMotion.FinalIK.InteractionObject;
+using InteractionTarget = Il2CppRootMotion.FinalIK.InteractionTarget;
+using FullBodyBipedEffector = Il2CppRootMotion.FinalIK.FullBodyBipedEffector;
+using GridGraph = Il2CppPathfinding.GridGraph;
+using GraphMask = Il2CppPathfinding.GraphMask;
+using NavmeshCut = Il2CppPathfinding.NavmeshCut;
+using NNConstraint = Il2CppPathfinding.NNConstraint;
+using NodeLink2 = Il2CppPathfinding.NodeLink2;
+using NumNeighbours = Il2CppPathfinding.NumNeighbours;
+using PathfindingTag = Il2CppPathfinding.PathfindingTag;
+using RVOSimulator = Il2CppPathfinding.RVO.RVOSimulator;
+#else
 using Mirror;
 using InteractionObject = RootMotion.FinalIK.InteractionObject;
 using InteractionTarget = RootMotion.FinalIK.InteractionTarget;
@@ -30,6 +48,7 @@ using NodeLink2 = Pathfinding.NodeLink2;
 using NumNeighbours = Pathfinding.NumNeighbours;
 using PathfindingTag = Pathfinding.PathfindingTag;
 using RVOSimulator = Pathfinding.RVO.RVOSimulator;
+#endif
 
 namespace OperatorKillHouse;
 
@@ -85,8 +104,9 @@ public sealed class OperatorKillHousePlugin : BasePlugin
     private const float DoorHingeToLeafCenter = .50283f;
     private const float DoorCenterTolerance = .035f;
     private const float WarehouseRoofHeight = 11.35f;
-    private const float WarehouseFixtureRoofGap = .04f;
+    private const float WarehouseFixtureRoofGap = .08f;
     private const float WarehouseFixtureLightDrop = .18f;
+    private static readonly Vector3 WarehouseFixtureVisualScale = new Vector3(1.75f, 2.5f, 1.5f);
     private const float WarehouseGroundElevation = -.015f;
     private const float WarehouseGroundSourceWidth = 5.425254f;
     private const float WarehouseGroundSourceDepth = 4.129904f;
@@ -1479,13 +1499,21 @@ public sealed class OperatorKillHousePlugin : BasePlugin
         }
 
         int repaired = 0;
+        int resized = 0;
         int invalid = 0;
         float maximumDisplacement = 0f;
         foreach (Transform fixture in fixtures)
         {
+            if (Vector3.Distance(fixture.localScale, WarehouseFixtureVisualScale) <= .001f) continue;
+            fixture.localScale = WarehouseFixtureVisualScale;
+            resized++;
+        }
+        Physics.SyncTransforms();
+        foreach (Transform fixture in fixtures)
+        {
             if (!TryRuntimeFixtureRoofGap(fixture, roofColliders, out float existingGap,
                     out float existingTop) ||
-                existingGap < -WarehouseFixtureRoofGap || existingGap > WarehouseRoofHeight)
+                existingGap < -WarehouseRoofHeight || existingGap > WarehouseRoofHeight)
             {
                 invalid++;
                 continue;
@@ -1521,7 +1549,7 @@ public sealed class OperatorKillHousePlugin : BasePlugin
             Mathf.Abs(gap - WarehouseFixtureRoofGap) > .015f);
         bool passed = invalid == 0 && postInvalid == 0;
         log.LogInfo("Vektor Kill House fixture roof-mount preparation: passed=" + passed +
-            ", fixtures=" + fixtures.Length + ", repaired=" + repaired +
+            ", fixtures=" + fixtures.Length + ", resized=" + resized + ", repaired=" + repaired +
             ", invalid=" + invalid + ", postInvalid=" + postInvalid +
             ", targetGap=" + WarehouseFixtureRoofGap.ToString("F3", CultureInfo.InvariantCulture) +
             ", maximumDisplacement=" + maximumDisplacement.ToString("F3", CultureInfo.InvariantCulture) + ".");
@@ -1735,43 +1763,50 @@ public sealed class OperatorKillHousePlugin : BasePlugin
             !TryRuntimeRendererBounds(fixture.gameObject, out Bounds bounds))
             return false;
         fixtureTop = bounds.max.y;
-        float minX = bounds.min.x;
-        float maxX = bounds.max.x;
-        float minZ = bounds.min.z;
-        float maxZ = bounds.max.z;
-        Vector2[] samples =
-        {
-            new Vector2(bounds.center.x, bounds.center.z),
-            new Vector2(minX, minZ), new Vector2(minX, maxZ),
-            new Vector2(maxX, minZ), new Vector2(maxX, maxZ),
-            new Vector2(minX, bounds.center.z), new Vector2(maxX, bounds.center.z),
-            new Vector2(bounds.center.x, minZ), new Vector2(bounds.center.x, maxZ)
-        };
+        const int subdivisions = 16;
         float lowest = float.PositiveInfinity;
-        foreach (Vector2 sample in samples)
+        bool originalBackfaceSetting = Physics.queriesHitBackfaces;
+        Physics.queriesHitBackfaces = true;
+        try
         {
-            if (!TryRuntimeWarehouseRoofSurface(roofColliders, sample.x, sample.y, out float surface))
-                return false;
-            if (surface < lowest) lowest = surface;
+            for (int xIndex = 0; xIndex <= subdivisions; xIndex++)
+            {
+                float worldX = Mathf.Lerp(bounds.min.x, bounds.max.x, xIndex / (float)subdivisions);
+                for (int zIndex = 0; zIndex <= subdivisions; zIndex++)
+                {
+                    float worldZ = Mathf.Lerp(bounds.min.z, bounds.max.z, zIndex / (float)subdivisions);
+                    if (!TryRuntimeWarehouseRoofUnderside(roofColliders, worldX, worldZ, out float underside))
+                        return false;
+                    if (underside < lowest) lowest = underside;
+                }
+            }
+        }
+        finally
+        {
+            Physics.queriesHitBackfaces = originalBackfaceSetting;
         }
         gap = lowest - fixtureTop;
         return float.IsFinite(gap);
     }
 
-    private static bool TryRuntimeWarehouseRoofSurface(Collider[] roofColliders, float worldX,
+    private static bool TryRuntimeWarehouseRoofUnderside(Collider[] roofColliders, float worldX,
         float worldZ, out float surfaceY)
     {
         surfaceY = float.NaN;
-        Ray ray = new Ray(new Vector3(worldX, WarehouseRoofHeight + 1f, worldZ), Vector3.down);
+        Collider[] validColliders = roofColliders.Where(collider => collider != null).ToArray();
+        if (validColliders.Length == 0) return false;
+        float rayStartY = validColliders.Min(collider => collider.bounds.min.y) - 1f;
+        float rayEndY = validColliders.Max(collider => collider.bounds.max.y) + 1f;
+        Ray ray = new Ray(new Vector3(worldX, rayStartY, worldZ), Vector3.up);
         float nearestDistance = float.PositiveInfinity;
-        foreach (Collider collider in roofColliders)
+        foreach (Collider collider in validColliders)
         {
-            if (collider != null && collider.Raycast(ray, out RaycastHit hit, WarehouseRoofHeight + 3f) &&
+            if (collider.Raycast(ray, out RaycastHit hit, rayEndY - rayStartY) &&
                 hit.distance < nearestDistance)
                 nearestDistance = hit.distance;
         }
         if (!float.IsFinite(nearestDistance)) return false;
-        surfaceY = ray.origin.y - nearestDistance;
+        surfaceY = ray.origin.y + nearestDistance;
         return float.IsFinite(surfaceY);
     }
 
@@ -4022,6 +4057,11 @@ public sealed class OperatorKillHousePlugin : BasePlugin
         block.SetColor("_EmissiveColor", emissionColor);
         block.SetColor("_EmissiveColorLDR", ldrColor);
         block.SetColor("_EmissionColor", ldrColor);
+        Color visibleSurface = state == 3 ? new Color(.12f, .12f, .12f, 1f) : Color.white;
+        block.SetColor("_BaseColor", visibleSurface);
+        block.SetColor("_Color", visibleSurface);
+        block.SetTexture("_BaseColorMap", Texture2D.whiteTexture);
+        block.SetTexture("_EmissiveColorMap", Texture2D.whiteTexture);
         block.SetFloat("_EmissiveIntensity", emission);
         block.SetFloat("_UseEmissiveIntensity", 1f);
         block.SetFloat("_EmissiveColorMode", 1f);
@@ -4039,7 +4079,8 @@ public sealed class OperatorKillHousePlugin : BasePlugin
         while (fixture != null && !fixture.name.StartsWith("NATIVE_Lamp_fluorescent_B_", StringComparison.Ordinal))
             fixture = fixture.parent;
         if (fixture == null ||
-            Vector3.Dot(fixture.TransformDirection(Vector3.back).normalized, Vector3.down) < .98f) return false;
+            Vector3.Dot(fixture.TransformDirection(Vector3.back).normalized, Vector3.down) < .98f ||
+            Vector3.Distance(fixture.localScale, WarehouseFixtureVisualScale) > .01f) return false;
         foreach (Material material in renderer.sharedMaterials)
         {
             if (material == null ||
@@ -4066,7 +4107,9 @@ public sealed class OperatorKillHousePlugin : BasePlugin
                Mathf.Abs(block.GetFloat("_AlbedoAffectEmissive") - 1f) <= .001f &&
                Mathf.Abs(block.GetFloat("_EmissiveIntensityUnit") - KillHouseFluorescentIntensityUnit) <= .001f &&
                Mathf.Abs(block.GetFloat("_EmissiveExposureWeight") - KillHouseFluorescentExposureWeight) <= .001f &&
-               Mathf.Abs(emissive.maxColorComponent - expected) <= .01f;
+               Mathf.Abs(emissive.maxColorComponent - expected) <= .01f &&
+               block.GetTexture("_BaseColorMap") == Texture2D.whiteTexture &&
+               block.GetTexture("_EmissiveColorMap") == Texture2D.whiteTexture;
     }
 
     private Material CreateResidentNativeMaterial(Material source, Shader resident, string profileName,

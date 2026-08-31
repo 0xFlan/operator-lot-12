@@ -11,6 +11,51 @@ public static class KillHousePreviewCapture
 {
     private const int Width = 1600;
     private const int Height = 900;
+    private const string BatchCaptureEnvironmentVariable = "VEKTOR_KILLHOUSE_BATCH_CAPTURE";
+    private static bool environmentBatchQueued;
+    private static string environmentBatchRequest;
+
+    [InitializeOnLoadMethod]
+    private static void QueueRequestedBatchCapture()
+    {
+        string request = Environment.GetEnvironmentVariable(BatchCaptureEnvironmentVariable);
+        if (environmentBatchQueued ||
+            (!string.Equals(request, "KH01", StringComparison.OrdinalIgnoreCase) &&
+             !string.Equals(request, "REBUILD_AND_CAPTURE_KH01", StringComparison.OrdinalIgnoreCase)))
+            return;
+        environmentBatchQueued = true;
+        environmentBatchRequest = request;
+        EditorApplication.update += RunRequestedBatchCaptureWhenReady;
+    }
+
+    private static void RunRequestedBatchCaptureWhenReady()
+    {
+        if (EditorApplication.isCompiling || EditorApplication.isUpdating) return;
+        EditorApplication.update -= RunRequestedBatchCaptureWhenReady;
+        Environment.SetEnvironmentVariable(BatchCaptureEnvironmentVariable, null);
+        if (string.Equals(environmentBatchRequest, "REBUILD_AND_CAPTURE_KH01",
+                StringComparison.OrdinalIgnoreCase))
+            RebuildScenesBundlesAndCaptureKh01Batch();
+        else
+            CaptureKh01FurnitureBatch();
+    }
+
+    public static void RebuildScenesBundlesAndCaptureKh01Batch()
+    {
+        try
+        {
+            KillHouseVariantBuilder.BuildAll();
+            KillHouseBundleBuilder.Build();
+            CaptureScene("Assets/VektorKillHouse/Scenes/KH01_CircuitHouse.unity");
+            Debug.Log("[Vektor Kill House] Rebuilt ten scenes and proof bundles, then captured KH01 visual evidence.");
+            EditorApplication.Exit(0);
+        }
+        catch (Exception exception)
+        {
+            Debug.LogException(exception);
+            EditorApplication.Exit(1);
+        }
+    }
 
     private sealed class ReviewMaterialScope : IDisposable
     {
@@ -154,6 +199,7 @@ public static class KillHousePreviewCapture
             CaptureFirstPerson(sceneName);
             CaptureMotifView(sceneName);
             CaptureWarehouseView(sceneName);
+            CaptureCeilingFixtureView(sceneName);
             CaptureBedView(sceneName);
             CaptureFurnitureView(sceneName);
         }
@@ -222,6 +268,80 @@ public static class KillHousePreviewCapture
         camera.farClipPlane = 100f;
         Render(camera, sceneName + "_warehouse.png");
         UnityEngine.Object.DestroyImmediate(cameraObject);
+    }
+
+    private static void CaptureCeilingFixtureView(string sceneName)
+    {
+        Light fixtureLight = UnityEngine.Object.FindObjectsByType<Light>(FindObjectsInactive.Exclude,
+                FindObjectsSortMode.None)
+            .FirstOrDefault(light => light.name.StartsWith("ROOM_LOCAL_FIXTURE_LIGHT_",
+                    StringComparison.Ordinal) &&
+                light.transform.parent != null &&
+                light.transform.parent.name.EndsWith("_STATE_LIT", StringComparison.Ordinal));
+        if (fixtureLight == null)
+            throw new InvalidDataException(sceneName + " has no active lit ceiling fixture for review.");
+
+        string suffix = fixtureLight.name.Substring("ROOM_LOCAL_FIXTURE_LIGHT_".Length);
+        Transform fixture = fixtureLight.transform.parent.GetComponentsInChildren<Transform>(true)
+            .FirstOrDefault(item => string.Equals(item.name,
+                "NATIVE_Lamp_fluorescent_B_" + suffix, StringComparison.Ordinal));
+        if (fixture == null)
+            throw new InvalidDataException(sceneName + " has no visual paired with its lit ceiling fixture.");
+
+        Renderer[] renderers = fixture.GetComponentsInChildren<Renderer>(true);
+        Bounds bounds = renderers[0].bounds;
+        foreach (Renderer renderer in renderers.Skip(1)) bounds.Encapsulate(renderer.bounds);
+
+        // The general review pass intentionally removes HDRP emission so the room geometry is
+        // readable.  That makes a correctly mounted, unlit fluorescent housing almost black
+        // against the corrugated roof and can hide the very occlusion this close-up is meant to
+        // prove.  Give only the selected fixture a temporary high-contrast emissive review
+        // material; this never touches the authored scene or shipped bundle.
+        Material[][] reviewMaterials = renderers.Select(renderer => renderer.sharedMaterials).ToArray();
+        Shader reviewShader = Shader.Find("Standard");
+        if (reviewShader == null)
+            throw new InvalidDataException("Built-in Standard shader is unavailable for ceiling-fixture review.");
+        Material fixtureReviewMaterial = new Material(reviewShader)
+        {
+            name = "REVIEW_ONLY_VISIBLE_CEILING_FIXTURE",
+            color = Color.white,
+            hideFlags = HideFlags.HideAndDontSave
+        };
+        fixtureReviewMaterial.EnableKeyword("_EMISSION");
+        fixtureReviewMaterial.SetColor("_EmissionColor", Color.white * 8f);
+        fixtureReviewMaterial.SetFloat("_Glossiness", .15f);
+        foreach (Renderer renderer in renderers)
+            renderer.sharedMaterials = Enumerable.Repeat(fixtureReviewMaterial,
+                Mathf.Max(1, renderer.sharedMaterials.Length)).ToArray();
+
+        GameObject cameraObject = new GameObject("REVIEW_ONLY_CEILING_FIXTURE_CAMERA")
+        {
+            hideFlags = HideFlags.HideAndDontSave
+        };
+        Camera camera = cameraObject.AddComponent<Camera>();
+        camera.fieldOfView = 52f;
+        Vector3 target = bounds.center;
+        camera.transform.position = target + Vector3.down * 3.25f + Vector3.back * .8f;
+        camera.transform.rotation = Quaternion.LookRotation(
+            (target - camera.transform.position).normalized,
+            Vector3.up);
+        camera.clearFlags = CameraClearFlags.SolidColor;
+        camera.backgroundColor = Color.black;
+        camera.nearClipPlane = .05f;
+        camera.farClipPlane = 25f;
+        try
+        {
+            Debug.Log("[Vektor Kill House] Ceiling-fixture review target=" + fixture.name +
+                      ", bounds=" + bounds + ", camera=" + camera.transform.position + ".");
+            Render(camera, sceneName + "_ceiling-fixture.png");
+        }
+        finally
+        {
+            for (int index = 0; index < renderers.Length; index++)
+                if (renderers[index] != null) renderers[index].sharedMaterials = reviewMaterials[index];
+            UnityEngine.Object.DestroyImmediate(fixtureReviewMaterial);
+            UnityEngine.Object.DestroyImmediate(cameraObject);
+        }
     }
 
     private static void CaptureBedView(string sceneName)

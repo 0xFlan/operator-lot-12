@@ -30,9 +30,9 @@
         "runtimeCompanion": {
           "pluginGuid": "operator.vektor-killhouse",
           "pluginVersion": "0.1.20",
-      "sha256": "06a2f7b6b0333ee7bb56175672275b4622f9e82d7bad530fe59924751e1a20f9",
-      "melonLoaderSha256": "d583883c4b2a1d18dd4f1f411496770fc228963eb37153692980932e81cd553b",
-      "runtimeContentId": "653b7bf109675eee0e10464678133076534d4efdb9d829dedf04f2703bdb358f",
+      "sha256": "5fa11f6d3653d82614ef6761f1fac9acccdf76884c8f62b00bd161f5111c0986",
+      "melonLoaderSha256": "23622a849d0b895e528f7852f2d2cad178baf089a2aeef69eb78e6edbd8b26dc",
+      "runtimeContentId": "de3ce267cf38dc847c148db2c1a43aa7e92401bc665a396ddd92517599eec080",
           "readyMarkerName": "MODDED_OPERATIONS_RUNTIME_CONTRACT_READY",
           "failureMarkerName": "MODDED_OPERATIONS_RUNTIME_CONTRACT_FAILED"
         },

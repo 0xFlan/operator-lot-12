@@ -19,7 +19,7 @@ Related projects:
 | Bundled internal Operator Mod API | `0.2.0-alpha.7` |
 | PVE | 1-4 players; selectable 10-60 enemies |
 | PVP | 2-12 players; six authored spawns per team |
-| Multiplayer status | Local BepInEx `PROVEN-RUNTIME`; online and MelonLoader live proof pending |
+| Multiplayer status | Local BepInEx and MelonLoader `PROVEN-RUNTIME`; separate-PC online proof pending |
 | Public release status | Source checkpoint only; no binary release from this repo |
 
 Protocol v6 gives both PVE and PVP exact content, scene-generation, companion,
@@ -34,6 +34,7 @@ supported until a real host and separate remote complete its paired-log matrix.
 - PVE clear-and-extract mission with a private vanilla-style 10-60 enemy selector.
 - Separate PVP operation for 2-12 players with six spawns per team.
 - Native OPERATOR doors, furniture, warehouse presentation, lighting, and post-processing.
+- Visible overhead fixtures mounted 0.080 m below the measured interior roof underside.
 - Preloaded decompressed door audio to reduce the hitch on the first doors opened.
 - One owner-local insertion placement per exact scene generation; no periodic
   teleport-to-spawn maintenance after gameplay begins.

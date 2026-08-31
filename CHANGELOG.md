@@ -2,6 +2,13 @@
 
 ## 0.1.24 / companion 0.1.20 runtime-fix candidate — 2026-08-30
 
+- Corrected every overhead fixture to mount from the warehouse roof's interior
+  underside rather than its exterior top face. The rendered fixture top now
+  keeps an exact 0.080 m underside gap and cannot remain embedded in the roof.
+- Rebuilt and load-verified all ten layouts and both bundles. Fresh local
+  BepInEx and MelonLoader 60-enemy PVE runs passed initial load, alive Restart,
+  fixture/material/lighting gates, grounded population validation, count
+  retention, and clean teardown. Separate-PC online proof remains pending.
 - Removed periodic player repositioning. Each owner places its own character at
   the assigned insertion once per exact scene generation, acknowledges it, and
   retires the placement path for normal gameplay.
