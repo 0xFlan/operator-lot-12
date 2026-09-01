@@ -53,7 +53,7 @@ using RVOSimulator = Pathfinding.RVO.RVOSimulator;
 namespace OperatorKillHouse;
 
 [BepInPlugin(PluginGuid, PluginName, PluginVersion)]
-[BepInDependency("operator.modded-operations", "0.3.32")]
+[BepInDependency("operator.modded-operations", "0.3.33")]
 [BepInDependency("operator.modapi", "0.2.0-alpha.7")]
 public sealed class OperatorKillHousePlugin : BasePlugin
 {

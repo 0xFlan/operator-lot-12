@@ -101,12 +101,12 @@ def main() -> int:
     if source_path.is_file():
         data = source_path.read_bytes()
         if len(data) != 381884 or sha256_bytes(data) != (
-            "BE4DE5B58865FCC6348D19EF3C8A851E1BAA4F42DA8614AAED5C4C6F5F493CF3"
+            "927EF2F2641403F78EB34031812FA900C40ECD5761224D56F93C22AF532044D1"
         ):
             errors.append("authored companion source identity does not match checkpoint 0.1.22")
         text = data.decode("utf-8", errors="replace")
         for fragment in (
-            '[BepInDependency("operator.modded-operations", "0.3.32")]',
+            '[BepInDependency("operator.modded-operations", "0.3.33")]',
             '[BepInDependency("operator.modapi", "0.2.0-alpha.7")]',
             'public const string PluginGuid = "operator.vektor-killhouse";',
             'public const string PluginVersion = "0.1.22";',
@@ -170,7 +170,7 @@ def main() -> int:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         if manifest.get("packageId") != "community.vektor-modular-killhouse":
             errors.append("manifest package ID changed")
-        if manifest.get("version") != "0.1.26":
+        if manifest.get("version") != "0.1.27":
             errors.append("manifest package version changed")
         maps = manifest.get("maps", [])
         if len(maps) != 1 or len(maps[0].get("sceneVariants", [])) != 10:

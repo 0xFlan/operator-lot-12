@@ -35,7 +35,7 @@
   effect or alter OPERATOR's bullets, hits, damage, or recoil.
 - Time each exact scene-preparation stage so cold bundle, material, navigation,
   spawn, and ready-marker cost can be distinguished in logs.
-- Require Modded Operations `0.3.32`, which throttles stable maintenance,
+- Require Modded Operations `0.3.33`, which throttles stable maintenance,
   retires resolved laptop/weapon scans, and preserves per-frame PVE readiness
   barriers.
 - Retain the private 10-60 selector. Sixty native AI remains an opt-in stress

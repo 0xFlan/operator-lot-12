@@ -102,7 +102,7 @@
   "selection": {
     "mode": "framework-owned-persistent-shuffle-bag",
     "ownerPluginId": "operator.modded-operations",
-    "minimumFrameworkVersion": "0.3.32",
+    "minimumFrameworkVersion": "0.3.33",
     "declarationGate": "sceneVariants.count>1",
     "selectionEvent": "fresh-operation-room-confirm",
     "selectOnceBeforeBundleSceneLoad": true,

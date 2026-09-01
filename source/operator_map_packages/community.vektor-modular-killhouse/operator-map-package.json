@@ -3,7 +3,7 @@
   "schemaVersion": 2,
   "packageId": "community.vektor-modular-killhouse",
   "displayName": "LOT 12: FALSE WALL",
-  "version": "0.1.26",
+  "version": "0.1.27",
   "maps": [
     {
       "mapId": "community.vektor-modular-killhouse.modular-killhouse",
@@ -28,9 +28,9 @@
       "runtimeCompanion": {
         "pluginGuid": "operator.vektor-killhouse",
         "pluginVersion": "0.1.22",
-        "sha256": "1aacb146e41929ee8c04b04326c1bb9b0a5bac28a4c48f4fbc793ce03e3b7151",
-        "melonLoaderSha256": "b27de25c42e5ddc52188304b457da0ec99b082cd4e6fa45887d8a6b7cc78805f",
-        "runtimeContentId": "a14a5498c15931933432f3f20d942eb25b2a12cb70dc0beb5f178f13cfc3a706",
+        "sha256": "0f7f341cadc74629a4e8910e656420ac4f12358fa6feeadb99dcdf0c11564f29",
+        "melonLoaderSha256": "2da4717490ebd223907528a8221b32f7c483f3d0e53aa6fa30ae681194bb301e",
+        "runtimeContentId": "ea7c3e509a8f812d4a53f7e7ca8ddcb259dece4a1868843769de58d4b46aae46",
         "readyMarkerName": "MODDED_OPERATIONS_RUNTIME_CONTRACT_READY",
         "failureMarkerName": "MODDED_OPERATIONS_RUNTIME_CONTRACT_FAILED"
       },
