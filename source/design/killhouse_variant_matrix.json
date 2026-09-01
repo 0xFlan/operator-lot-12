@@ -3,8 +3,8 @@
   "projectId": "community.vektor-modular-killhouse",
   "mapId": "community.vektor-modular-killhouse.modular-killhouse",
   "releaseTargets": {
-    "packageVersion": "0.1.25",
-    "companionVersion": "0.1.21",
+    "packageVersion": "0.1.26",
+    "companionVersion": "0.1.22",
     "bundledApiVersion": "0.2.0-alpha.7",
     "sceneValidationSchema": "vektor-killhouse/scene-validation@19",
     "aggregateSceneValidationSchema": "vektor-killhouse/aggregate-scene-validation@19",
@@ -13,17 +13,17 @@
   "runtimeCompatibility": {
     "packageContentIdentity": {
       "domain": "OperatorModAPI.ModdedMapPackageContent.v1",
-      "sha256": "498b21bd8c9733916bdfa1e307dfa656feabc722384781cf4bfad604df58b328"
+      "sha256": "cc39c1e00c73c56127d1b0063e200d83da9678f137b9524a5760ca14e89350ff"
     },
     "framework": {
       "pluginGuid": "operator.modded-operations",
-      "version": "0.3.32",
+      "version": "0.3.33",
       "fileName": "OperatorModdedOperations.dll",
-      "bytes": 644096,
-      "sha256": "57ce5f1657cabdc5b1785013cf95d22913027eaee0d8a08000cc31ad1dfb7d91",
+      "bytes": 644608,
+      "sha256": "601d587c889a6af17142986b1b63427033872384120ee086e4892f0031928dab",
       "melonLoaderFileName": "OperatorModdedOperations.MelonLoader.dll",
-      "melonLoaderBytes": 645632,
-      "melonLoaderSha256": "fa679a7ac2f9be3543022b88bdbf7af8756f8d7c544a656e61f15f3e3ec73cf3"
+      "melonLoaderBytes": 646144,
+      "melonLoaderSha256": "fbb82582f22fb64387704cc685d4084765b2733f7c2c6b3616e19282433d7937"
     },
     "bundledApi": {
       "delivery": "modded-operations-bundled-only",
@@ -47,15 +47,15 @@
     },
     "runtimeCompanion": {
       "pluginGuid": "operator.vektor-killhouse",
-      "pluginVersion": "0.1.21",
+      "pluginVersion": "0.1.22",
       "bytes": 471552,
-      "sha256": "c993f67aed6d0afbd2022238f3aa63b6388c65b848a75a29c04742ddf8a8d9bc",
+      "sha256": "1aacb146e41929ee8c04b04326c1bb9b0a5bac28a4c48f4fbc793ce03e3b7151",
       "melonLoaderBytes": 472576,
-      "melonLoaderSha256": "8c4fd9ccb181f8cd6122b6448b818fb617c1cd3677bdc034f39bb067199adf95",
-      "runtimeContentId": "0c4be21de4dbea7c06f7f6ef21a1d1eba74fa37fb036ae0824670768af47ed7c",
+      "melonLoaderSha256": "b27de25c42e5ddc52188304b457da0ec99b082cd4e6fa45887d8a6b7cc78805f",
+      "runtimeContentId": "a14a5498c15931933432f3f20d942eb25b2a12cb70dc0beb5f178f13cfc3a706",
       "sourceFile": "source/runtime/OperatorKillHousePlugin.cs",
-      "sourceBytes": 381874,
-      "sourceSha256": "fcefdb428d05744700412d9b1b5c90b8df378f5ea29918881c37d1eba8c7a1d5",
+      "sourceBytes": 381884,
+      "sourceSha256": "be4de5b58865fcc6348d19ef3c8a851e1baa4f42da8614aaed5c4c6f5f493cf3",
       "readyMarkerName": "MODDED_OPERATIONS_RUNTIME_CONTRACT_READY",
       "failureMarkerName": "MODDED_OPERATIONS_RUNTIME_CONTRACT_FAILED",
       "sceneScope": "exact-generation-scene",

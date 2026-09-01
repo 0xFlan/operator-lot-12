@@ -1,7 +1,7 @@
 # Current status
 
-This repository is the source checkpoint for LOT 12 package `0.1.25` and
-companion `0.1.21`, prepared against Modded Operations `0.3.32` and bundled
+This repository is the source checkpoint for LOT 12 package `0.1.26` and
+companion `0.1.22`, prepared against Modded Operations `0.3.33` and bundled
 Operator Mod API `0.2.0-alpha.7`.
 
 Static source, compiler, package, scene-authoring, PVE/PVP marker, and
@@ -9,16 +9,16 @@ identity-contract reviews pass in the private build workspace. The exact
 companion identities are:
 
 ```text
-OperatorKillHouse.dll                    471552  C993F67AED6D0AFBD2022238F3AA63B6388C65B848A75A29C04742DDF8A8D9BC
-OperatorKillHouse.MelonLoader.dll        472576  8C4FD9CCB181F8CD6122B6448B818FB617C1CD3677BDC034F39BB067199ADF95
+OperatorKillHouse.dll                    471552  1AACB146E41929EE8C04B04326C1BB9B0A5BAC28A4C48F4FBC793CE03E3B7151
+OperatorKillHouse.MelonLoader.dll        472576  B27DE25C42E5DDC52188304B457DA0EC99B082CD4E6FA45887D8A6B7CC78805F
 ```
 
 The loader-neutral runtime-pair ID is
-`0c4be21de4dbea7c06f7f6ef21a1d1eba74fa37fb036ae0824670768af47ed7c`.
-The package manifest is 5,401 bytes with SHA-256
-`A62580BB98224450E767B2B7D42A971AA13D1A455B7F68C6A9E347BCB0C7BB29`.
+`a14a5498c15931933432f3f20d942eb25b2a12cb70dc0beb5f178f13cfc3a706`.
+The package manifest is 5,403 bytes with SHA-256
+`921318B659BE07CF97EB913298196C56D647B840C99D7A055CC1619FC55FA55B`.
 Its computed package-content identity is
-`498B21BD8C9733916BDFA1E307DFA656FEABC722384781CF4BFAD604DF58B328`.
+`CC39C1E00C73C56127D1B0063E200D83DA9678F137B9524A5760CA14E89350FF`.
 
 Every one of the ten package scenes contains 72 tactical PVE candidates and
 certifies the operation's private 10-60 enemy range. The selectable maximum of

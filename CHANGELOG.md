@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.1.26 / companion 0.1.22 all-map multiplayer candidate — 2026-08-31
+
+- Require Modded Operations `0.3.33` and protocol v6 for exact selected-loader,
+  companion, package, operation, variant, scene-generation, and PVE population
+  agreement before gameplay begins.
+- Keep PVE and PVP insertion sets isolated. PVE uses its explicit player
+  markers; the 12-player PVP operation retains exactly six accepted markers
+  per team and never consumes PVE markers.
+- Retain the private 10-60 PVE enemy selector, 72 authored tactical candidates
+  per scene, and one host-only native AI population call. Tier 1, vanilla
+  missions, and other map enemy settings are not modified.
+- Preserve one owner-local player placement per exact generation. OPERATOR and
+  Mirror remain authoritative for player/AI movement, bullets, hits, damage,
+  animation, death, PVP scoring, and respawn.
+- Pass the source audit, design/staging validators, exact dual-loader runtime
+  pair audit, package closure, archive-entry verification, and live-folder
+  byte-for-byte deployment verification. Separate-PC PVE and PVP acceptance
+  remains pending.
+- Pin BepInEx companion SHA-256
+  `1AACB146E41929EE8C04B04326C1BB9B0A5BAC28A4C48F4FBC793CE03E3B7151`
+  and MelonLoader companion SHA-256
+  `B27DE25C42E5DDC52188304B457DA0EC99B082CD4E6FA45887D8A6B7CC78805F`.
+
 ## 0.1.25 / companion 0.1.21 performance and lighting candidate — 2026-08-30
 
 - Keep every visible ceiling fixture and its contribution to walls and floors,

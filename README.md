@@ -13,9 +13,9 @@ Related projects:
 
 | Component | Version/status |
 | --- | --- |
-| Map package | `0.1.25` |
-| Runtime companion | `0.1.21` (BepInEx and MelonLoader variants) |
-| Required Modded Operations | `0.3.32` |
+| Map package | `0.1.26` |
+| Runtime companion | `0.1.22` (BepInEx and MelonLoader variants) |
+| Required Modded Operations | `0.3.33` |
 | Bundled internal Operator Mod API | `0.2.0-alpha.7` |
 | PVE | 1-4 players; selectable 10-60 enemies |
 | PVP | 2-12 players; six authored spawns per team |
@@ -63,7 +63,7 @@ supported until a real host and separate remote complete its paired-log matrix.
 
 - A legally owned, installed copy of OPERATOR.
 - exactly one supported BepInEx or MelonLoader runtime plus generated interop assemblies.
-- OPERATOR: Modded Operations `0.3.32` with its bundled internal API alpha.7.
+- OPERATOR: Modded Operations `0.3.33` with its bundled internal API alpha.7.
 - Unity `6000.3.8f1` with HDRP `17.3.0`.
 - Native asset inputs extracted from your own installed game.
 

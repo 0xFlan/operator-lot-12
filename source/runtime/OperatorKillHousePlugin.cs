@@ -53,13 +53,13 @@ using RVOSimulator = Pathfinding.RVO.RVOSimulator;
 namespace OperatorKillHouse;
 
 [BepInPlugin(PluginGuid, PluginName, PluginVersion)]
-[BepInDependency("operator.modded-operations")]
+[BepInDependency("operator.modded-operations", "0.3.32")]
 [BepInDependency("operator.modapi", "0.2.0-alpha.7")]
 public sealed class OperatorKillHousePlugin : BasePlugin
 {
     public const string PluginGuid = "operator.vektor-killhouse";
     public const string PluginName = "LOT 12: FALSE WALL";
-    public const string PluginVersion = "0.1.21";
+    public const string PluginVersion = "0.1.22";
 
     private const string ExactUnityVersion = "6000.3.8f1";
     private const float IndoorFlashlightMultiplier = 6f;
