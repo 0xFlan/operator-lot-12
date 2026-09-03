@@ -100,16 +100,19 @@ def main() -> int:
     source_path = ROOT / "source/runtime/OperatorKillHousePlugin.cs"
     if source_path.is_file():
         data = source_path.read_bytes()
-        if len(data) != 381857 or sha256_bytes(data) != (
-            "37BAAE1B4A417D164685301DF78E2B89AAA90FD7BFF4E3A1414DC07DB966DA5B"
+        if len(data) != 383659 or sha256_bytes(data) != (
+            "964E757104A00AD1C5B6475BDFC7083DD9699BE466516767B316675AEDE32DD8"
         ):
-            errors.append("authored companion source identity does not match checkpoint 0.1.23")
+            errors.append("authored companion source identity does not match checkpoint 0.1.24")
         text = data.decode("utf-8", errors="replace")
         for fragment in (
             '[BepInDependency("operator.modded-operations")]',
             '[BepInDependency("operator.modapi")]',
             'public const string PluginGuid = "operator.vektor-killhouse";',
-            'public const string PluginVersion = "0.1.23";',
+            'public const string PluginVersion = "0.1.24";',
+            "private const float WarehouseVerticalScale = 1.20f;",
+            "private const float WarehouseMinimumRoofElevation = 8.70f;",
+            "private const float WarehouseFixtureRoofGap = .24f;",
             'private const string ModdedOperationsReadyMarkerName = "MODDED_OPERATIONS_RUNTIME_CONTRACT_READY";',
             'private const string ModdedOperationsFailureMarkerName = "MODDED_OPERATIONS_RUNTIME_CONTRACT_FAILED";',
             "AuditNativeMuzzleFlashContract(",
@@ -140,6 +143,10 @@ def main() -> int:
             "shadowCastingFixtureLights == litRooms",
             '"expectedShadowCastingFixtureLights"',
             "one-soft-shadow-owner-per-lit-room",
+            "private const float WarehouseVerticalScale = 1.20f;",
+            "private const float WarehouseMinimumRoofElevation = 8.70f;",
+            "private const float WarehouseFixtureRoofGap = .24f;",
+            '"minimumFixtureRoofUndersideMeters"',
         ):
             if fragment not in builder:
                 errors.append(f"authored lighting performance contract is missing: {fragment}")
@@ -170,7 +177,7 @@ def main() -> int:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         if manifest.get("packageId") != "community.vektor-modular-killhouse":
             errors.append("manifest package ID changed")
-        if manifest.get("version") != "0.1.28":
+        if manifest.get("version") != "0.1.29":
             errors.append("manifest package version changed")
         maps = manifest.get("maps", [])
         if len(maps) != 1 or len(maps[0].get("sceneVariants", [])) != 10:
