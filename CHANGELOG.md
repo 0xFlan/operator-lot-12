@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.1.28 / companion 0.1.23 dual-loader local-runtime candidate — 2026-09-02
+
+- Require Modded Operations `0.3.35` and bundled Operator Mod API
+  `0.2.0-alpha.8`.
+- Ship one map archive containing the shared package plus the BepInEx and
+  MelonLoader companions. Both managed trees may remain installed, but exactly
+  one native loader bootstrap may be active.
+- Retain ten randomized layouts, the separate 1-4 player PVE operation with a
+  10-60 enemy selector, and the separate 2-12 player PVP operation with six
+  authored spawns per team.
+- Preserve one owner-local insertion placement per scene generation. Native
+  OPERATOR/Mirror systems remain authoritative for players, AI, bullets, hits,
+  damage, death, scoring, and round respawn.
+- Keep the corrected interior-mounted ceiling fixtures, reduced fixture bloom,
+  bounded door-audio preload, and cached post-readiness checks.
+- Pass local BepInEx-only, MelonLoader-only, both-managed/BepInEx-selected, and
+  both-managed/MelonLoader-selected runtime gates, including 60-enemy PVE and
+  PVP selection/readiness checks under each loader.
+- Keep separate-PC PVE and PVP acceptance open. This is a multiplayer test
+  candidate, not a promoted Nexus release.
+- Pin BepInEx companion SHA-256
+  `394638B4F53864D3BE06D78E99FDDAD89057025AC37A836461B0D784FBBFF013`
+  and MelonLoader companion SHA-256
+  `74CF2EA39225A6168DF6445DF8064867C72086A7C51F7EAC8EA926FD34673260`.
+
 ## 0.1.26 / companion 0.1.22 all-map multiplayer candidate — 2026-08-31
 
 - Require Modded Operations `0.3.33` and protocol v6 for exact selected-loader,

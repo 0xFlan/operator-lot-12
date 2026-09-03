@@ -100,16 +100,16 @@ def main() -> int:
     source_path = ROOT / "source/runtime/OperatorKillHousePlugin.cs"
     if source_path.is_file():
         data = source_path.read_bytes()
-        if len(data) != 381884 or sha256_bytes(data) != (
-            "927EF2F2641403F78EB34031812FA900C40ECD5761224D56F93C22AF532044D1"
+        if len(data) != 381857 or sha256_bytes(data) != (
+            "37BAAE1B4A417D164685301DF78E2B89AAA90FD7BFF4E3A1414DC07DB966DA5B"
         ):
-            errors.append("authored companion source identity does not match checkpoint 0.1.22")
+            errors.append("authored companion source identity does not match checkpoint 0.1.23")
         text = data.decode("utf-8", errors="replace")
         for fragment in (
-            '[BepInDependency("operator.modded-operations", "0.3.33")]',
-            '[BepInDependency("operator.modapi", "0.2.0-alpha.7")]',
+            '[BepInDependency("operator.modded-operations")]',
+            '[BepInDependency("operator.modapi")]',
             'public const string PluginGuid = "operator.vektor-killhouse";',
-            'public const string PluginVersion = "0.1.22";',
+            'public const string PluginVersion = "0.1.23";',
             'private const string ModdedOperationsReadyMarkerName = "MODDED_OPERATIONS_RUNTIME_CONTRACT_READY";',
             'private const string ModdedOperationsFailureMarkerName = "MODDED_OPERATIONS_RUNTIME_CONTRACT_FAILED";',
             "AuditNativeMuzzleFlashContract(",
@@ -155,22 +155,22 @@ def main() -> int:
         framework = matrix.get("runtimeCompatibility", {}).get("framework", {})
         expected_framework = {
             "pluginGuid": "operator.modded-operations",
-            "version": "0.3.33",
+            "version": "0.3.35",
             "fileName": "OperatorModdedOperations.dll",
             "bytes": 644608,
-            "sha256": "601d587c889a6af17142986b1b63427033872384120ee086e4892f0031928dab",
+            "sha256": "ce6d28f478f2563709d7933dfc8a4f8dabd215e0b678555fe39d1a0e1b616f55",
             "melonLoaderFileName": "OperatorModdedOperations.MelonLoader.dll",
             "melonLoaderBytes": 646144,
-            "melonLoaderSha256": "fbb82582f22fb64387704cc685d4084765b2733f7c2c6b3616e19282433d7937",
+            "melonLoaderSha256": "297bf4fb086f5fc7296563060c05d95c153d316579a6f57ee64905896dd30f60",
         }
         if framework != expected_framework:
-            errors.append("design matrix framework identity does not match checkpoint 0.3.33")
+            errors.append("design matrix framework identity does not match checkpoint 0.3.35")
 
     if manifest_path.is_file():
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         if manifest.get("packageId") != "community.vektor-modular-killhouse":
             errors.append("manifest package ID changed")
-        if manifest.get("version") != "0.1.27":
+        if manifest.get("version") != "0.1.28":
             errors.append("manifest package version changed")
         maps = manifest.get("maps", [])
         if len(maps) != 1 or len(maps[0].get("sceneVariants", [])) != 10:

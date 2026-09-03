@@ -17,13 +17,13 @@
     },
     "framework": {
       "pluginGuid": "operator.modded-operations",
-      "version": "0.3.33",
+      "version": "0.3.35",
       "fileName": "OperatorModdedOperations.dll",
       "bytes": 644608,
-      "sha256": "601d587c889a6af17142986b1b63427033872384120ee086e4892f0031928dab",
+      "sha256": "ce6d28f478f2563709d7933dfc8a4f8dabd215e0b678555fe39d1a0e1b616f55",
       "melonLoaderFileName": "OperatorModdedOperations.MelonLoader.dll",
       "melonLoaderBytes": 646144,
-      "melonLoaderSha256": "fbb82582f22fb64387704cc685d4084765b2733f7c2c6b3616e19282433d7937"
+      "melonLoaderSha256": "297bf4fb086f5fc7296563060c05d95c153d316579a6f57ee64905896dd30f60"
     },
     "bundledApi": {
       "delivery": "modded-operations-bundled-only",

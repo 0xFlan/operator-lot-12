@@ -13,13 +13,13 @@ Related projects:
 
 | Component | Version/status |
 | --- | --- |
-| Map package | `0.1.26` |
-| Runtime companion | `0.1.22` (BepInEx and MelonLoader variants) |
-| Required Modded Operations | `0.3.33` |
-| Bundled internal Operator Mod API | `0.2.0-alpha.7` |
+| Map package | `0.1.28` |
+| Runtime companion | `0.1.23` (BepInEx and MelonLoader variants) |
+| Required Modded Operations | `0.3.35` |
+| Bundled internal Operator Mod API | `0.2.0-alpha.8` |
 | PVE | 1-4 players; selectable 10-60 enemies |
 | PVP | 2-12 players; six authored spawns per team |
-| Multiplayer status | Current BepInEx candidate `PROVEN-RUNTIME` locally; current MelonLoader build/static proof and separate-PC online proof pending |
+| Multiplayer status | BepInEx and MelonLoader `PROVEN-RUNTIME` locally; separate-PC online proof pending |
 | Public release status | Source checkpoint only; no binary release from this repo |
 
 Protocol v6 gives both PVE and PVP exact content, scene-generation, companion,
@@ -63,7 +63,7 @@ supported until a real host and separate remote complete its paired-log matrix.
 
 - A legally owned, installed copy of OPERATOR.
 - exactly one supported BepInEx or MelonLoader runtime plus generated interop assemblies.
-- OPERATOR: Modded Operations `0.3.33` with its bundled internal API alpha.7.
+- OPERATOR: Modded Operations `0.3.35` with its bundled internal API alpha.8.
 - Unity `6000.3.8f1` with HDRP `17.3.0`.
 - Native asset inputs extracted from your own installed game.
 
@@ -118,9 +118,10 @@ Install Modded Operations first. The LOT 12 archive then extracts directly into
 ```
 
 One dual-loader archive may carry both companion entries, but only the entry
-whose loader is active can execute. Never activate BepInEx and MelonLoader in
-the same install. The package under `OperatorMods` is shared and is not owned
-by the executable-suite uninstaller.
+whose loader is selected can execute. Both managed trees may remain installed;
+the Modded Operations loader selector must leave exactly one approved native
+bootstrap active before OPERATOR starts. The package under `OperatorMods` is
+shared and is not owned by the executable-suite uninstaller.
 
 ## License and asset boundary
 
