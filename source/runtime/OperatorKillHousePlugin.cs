@@ -59,7 +59,7 @@ public sealed class OperatorKillHousePlugin : BasePlugin
 {
     public const string PluginGuid = "operator.vektor-killhouse";
     public const string PluginName = "LOT 12: FALSE WALL";
-    public const string PluginVersion = "0.1.23";
+    public const string PluginVersion = "0.1.24";
 
     private const string ExactUnityVersion = "6000.3.8f1";
     private const float IndoorFlashlightMultiplier = 6f;
@@ -103,8 +103,10 @@ public sealed class OperatorKillHousePlugin : BasePlugin
     private const float DoorwayOpeningTangentOffset = -.0391f;
     private const float DoorHingeToLeafCenter = .50283f;
     private const float DoorCenterTolerance = .035f;
-    private const float WarehouseRoofHeight = 11.35f;
-    private const float WarehouseFixtureRoofGap = .08f;
+    private const float WarehouseVerticalScale = 1.20f;
+    private const float WarehouseRoofHeight = 13.62f;
+    private const float WarehouseMinimumRoofElevation = 8.70f;
+    private const float WarehouseFixtureRoofGap = .24f;
     private const float WarehouseFixtureLightDrop = .18f;
     private static readonly Vector3 WarehouseFixtureVisualScale = new Vector3(1.75f, 2.5f, 1.5f);
     private const float WarehouseGroundElevation = -.015f;
@@ -1702,6 +1704,7 @@ public sealed class OperatorKillHousePlugin : BasePlugin
         int pairedFixtureHdrpData = 0;
         int duplicateFixtureHdrpData = 0;
         var fixtureRoofGaps = new List<float>();
+        var fixtureRoofUndersides = new List<float>();
         List<string> invalidSamples = new List<string>();
         foreach (Light light in local)
         {
@@ -1728,8 +1731,11 @@ public sealed class OperatorKillHousePlugin : BasePlugin
                     out float fixtureRoofGap,
                     out float fixtureTop) &&
                 Mathf.Abs(fixtureRoofGap - WarehouseFixtureRoofGap) <= .015f &&
+                fixtureTop + fixtureRoofGap >= WarehouseMinimumRoofElevation - .05f &&
                 Mathf.Abs((fixtureTop - light.transform.position.y) - WarehouseFixtureLightDrop) <= .015f;
             if (float.IsFinite(fixtureRoofGap)) fixtureRoofGaps.Add(fixtureRoofGap);
+            if (float.IsFinite(fixtureRoofGap) && float.IsFinite(fixtureTop))
+                fixtureRoofUndersides.Add(fixtureTop + fixtureRoofGap);
             if (!fixtureMountValid) invalidFixtureMounts++;
             bool stateValid = holderName.EndsWith("_STATE_LIT", StringComparison.Ordinal)
                 ? light.enabled && hd != null && hd.intensity >= 1050f && hd.intensity <= 1450f
@@ -1780,6 +1786,8 @@ public sealed class OperatorKillHousePlugin : BasePlugin
         bool localContract = local.Length >= roomCount && invalidFixtureLights == 0 &&
                              fixtureVisuals.Length == local.Length && invalidFixtureMounts == 0 &&
                              warehouseRoofColliders.Length > 0 && fixtureRoofGaps.Count == local.Length &&
+                             fixtureRoofUndersides.Count == local.Length &&
+                             fixtureRoofUndersides.Min() >= WarehouseMinimumRoofElevation - .05f &&
                              pairedFixtureHdrpData == local.Length && duplicateFixtureHdrpData == 0 &&
                              fixtureTreeHdrpData.Length == local.Length && orphanFixtureHdrpData == 0 &&
                              roomLightHolders.Length == roomCount && litSafeRooms == 1 &&
@@ -1800,6 +1808,9 @@ public sealed class OperatorKillHousePlugin : BasePlugin
                     ", fixtureRoofGap=" + (fixtureRoofGaps.Count == 0 ? "missing" :
                         fixtureRoofGaps.Min().ToString("F3", CultureInfo.InvariantCulture) + ".." +
                         fixtureRoofGaps.Max().ToString("F3", CultureInfo.InvariantCulture)) +
+                    ", fixtureRoofUnderside=" + (fixtureRoofUndersides.Count == 0 ? "missing" :
+                        fixtureRoofUndersides.Min().ToString("F2", CultureInfo.InvariantCulture) + ".." +
+                        fixtureRoofUndersides.Max().ToString("F2", CultureInfo.InvariantCulture)) +
                     ", roofColliders=" + warehouseRoofColliders.Length +
                     ", hdrpDataAdded=" + addedHdrpData +
                     ", pairedFixtureHdrpData=" + pairedFixtureHdrpData +
@@ -2835,6 +2846,10 @@ public sealed class OperatorKillHousePlugin : BasePlugin
             Mathf.Abs(warehouseGroundCollider.bounds.size.x - warehouseGroundBounds.size.x) <= .002f &&
             Mathf.Abs(warehouseGroundCollider.bounds.size.z - warehouseGroundBounds.size.z) <= .002f;
         Transform warehouseShellRoot = root.transform.Find("05_HIGH_WAREHOUSE_SHELL");
+        Transform warehouseCompleteShell = warehouseShellRoot == null ? null :
+            warehouseShellRoot.Find("NATIVE_WarehousePvpCompleteShell");
+        bool warehouseVerticalScaleValid = warehouseCompleteShell != null &&
+            Mathf.Abs(warehouseCompleteShell.localScale.y - WarehouseVerticalScale) <= .001f;
         bool warehouseGroundValid = warehouseGrounds.Length == 1 && warehouseGround != null &&
             warehouseGround.parent == warehouseShellRoot && warehouseGroundFilters.Length == 1 &&
             warehouseGroundRenderers.Length == 1 && warehouseGroundRenderer.sharedMaterials.Length == 1 &&
@@ -2859,6 +2874,9 @@ public sealed class OperatorKillHousePlugin : BasePlugin
         float warehouseRoofElevation = warehouseRoofRenderer == null
             ? float.NaN
             : root.transform.InverseTransformPoint(warehouseRoofRenderer.bounds.max).y;
+        float warehouseMinimumRoofElevation = warehouseRoofRenderer == null
+            ? float.NaN
+            : root.transform.InverseTransformPoint(warehouseRoofRenderer.bounds.min).y;
         BoxCollider[] exfilColliders = exfils.Length == 1
             ? exfils[0].GetComponents<BoxCollider>()
             : Array.Empty<BoxCollider>();
@@ -2878,10 +2896,12 @@ public sealed class OperatorKillHousePlugin : BasePlugin
                       players == 4 && pvpTeam1Players == 6 && pvpTeam2Players == 6 &&
                       roomFloors >= 19 && roomFloors <= 21 && enemies == expectedEnemies &&
                        exfils.Length == 1 && exfilColliders.Length == 1 && exfilValid && roomCeilings == 0 &&
-                      connectorFloors >= 1 && connectorFloors <= 32 && connectorCeilings == 0 && warehouseShellGroups == 1 &&
+                      connectorFloors >= 1 && connectorFloors <= 32 && connectorCeilings == 0 &&
+                      warehouseShellGroups == 1 && warehouseVerticalScaleValid &&
                        warehouseParts.Length == 4 && warehouseMeshColliders == 4 &&
                        warehouseGrounds.Length == 1 && warehouseGroundValid &&
                       warehouseRoofRenderer != null && Mathf.Abs(warehouseRoofElevation - WarehouseRoofHeight) <= .15f &&
+                      warehouseMinimumRoofElevation >= WarehouseMinimumRoofElevation - .05f &&
                       warehouseFinishMarkers == 1 && invalidWarehousePartFinish == 0 && warehouseSteelSlots == 4 &&
                        obsoleteWarehouseModules == 0 && obsoleteCorrugatedSlots == 0 && openTopMarkers == 1 &&
                        hallwaySideDoors >= 1 && primitiveMeshes == 0 && furniturePlacementValid;
@@ -2896,8 +2916,11 @@ public sealed class OperatorKillHousePlugin : BasePlugin
                          ", roomFloors=" + roomFloors + ", roomCeilings=" + roomCeilings +
                          ", connectorFloors=" + connectorFloors + ", connectorCeilings=" + connectorCeilings +
                          ", warehouseShellGroups=" + warehouseShellGroups +
+                         ", warehouseVerticalScaleValid=" + warehouseVerticalScaleValid +
                          ", warehouseParts=" + warehouseParts.Length +
                          ", warehouseRoofElevation=" + warehouseRoofElevation.ToString("F2", CultureInfo.InvariantCulture) +
+                         ", warehouseMinimumRoofElevation=" +
+                         warehouseMinimumRoofElevation.ToString("F2", CultureInfo.InvariantCulture) +
                          ", warehouseFinishMarkers=" + warehouseFinishMarkers +
                          ", invalidWarehousePartFinish=" + invalidWarehousePartFinish +
                          ", warehouseSteelSlots=" + warehouseSteelSlots +

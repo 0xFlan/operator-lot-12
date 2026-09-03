@@ -35,8 +35,8 @@ BUILDER_PATH = (
 )
 DEFAULT_JSON = SOURCE_ROOT / "evidence" / "killhouse_layout_uniqueness_audit.json"
 DEFAULT_MARKDOWN = SOURCE_ROOT / "evidence" / "killhouse_layout_uniqueness_audit.md"
-EXPECTED_MATRIX_SCHEMA = "vektor-killhouse/variant-matrix@15"
-EXPECTED_SCENE_VALIDATION_SCHEMA = "vektor-killhouse/scene-validation@19"
+EXPECTED_MATRIX_SCHEMA = "vektor-killhouse/variant-matrix@16"
+EXPECTED_SCENE_VALIDATION_SCHEMA = "vektor-killhouse/scene-validation@20"
 
 
 # These are prospective design-quality floors, not variant-name checks. A pair
@@ -877,7 +877,7 @@ def build_report() -> dict[str, Any]:
     return {
         "schema": "vektor-killhouse/layout-uniqueness-audit@1",
         "generatedUtc": dt.datetime.now(dt.timezone.utc).isoformat().replace("+00:00", "Z"),
-        "scope": "KH01-KH10 current authored Unity scenes and scene-validation@19 records",
+        "scope": "KH01-KH10 current authored Unity scenes and scene-validation@20 records",
         "method": {
             "renamingInvariant": True,
             "translationInvariant": True,

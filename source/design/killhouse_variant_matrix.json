@@ -1,19 +1,19 @@
 {
-  "schema": "vektor-killhouse/variant-matrix@15",
+  "schema": "vektor-killhouse/variant-matrix@16",
   "projectId": "community.vektor-modular-killhouse",
   "mapId": "community.vektor-modular-killhouse.modular-killhouse",
   "releaseTargets": {
-    "packageVersion": "0.1.26",
-    "companionVersion": "0.1.22",
-    "bundledApiVersion": "0.2.0-alpha.7",
-    "sceneValidationSchema": "vektor-killhouse/scene-validation@19",
-    "aggregateSceneValidationSchema": "vektor-killhouse/aggregate-scene-validation@19",
+    "packageVersion": "0.1.29",
+    "companionVersion": "0.1.24",
+    "bundledApiVersion": "0.2.0-alpha.8",
+    "sceneValidationSchema": "vektor-killhouse/scene-validation@20",
+    "aggregateSceneValidationSchema": "vektor-killhouse/aggregate-scene-validation@20",
     "nativeAssetAllowlistSchema": "vektor-killhouse/native-asset-allowlist@4"
   },
   "runtimeCompatibility": {
     "packageContentIdentity": {
       "domain": "OperatorModAPI.ModdedMapPackageContent.v1",
-      "sha256": "cc39c1e00c73c56127d1b0063e200d83da9678f137b9524a5760ca14e89350ff"
+      "sha256": "233e2b3058e77c7bf22458f548efbf948b024759cb0aef0bf5138d8a78434743"
     },
     "framework": {
       "pluginGuid": "operator.modded-operations",
@@ -28,34 +28,34 @@
     "bundledApi": {
       "delivery": "modded-operations-bundled-only",
       "standaloneAlphaReleaseAllowed": false,
-      "version": "0.2.0-alpha.7",
+      "version": "0.2.0-alpha.8",
       "core": {
         "fileName": "OperatorModAPI.dll",
-        "bytes": 204800,
-        "sha256": "5b74ac25b4047d9ab8e9929d136c53b7543da52b621faf3d4af42719d276e21e"
+        "bytes": 209920,
+        "sha256": "30ea90556eed4d9111077f4985f4866ecdb76ae9f11a2c9dcb3b1b5509f1fd0b"
       },
       "host": {
         "fileName": "OperatorModAPI.BepInEx.dll",
         "bytes": 15872,
-        "sha256": "6223553c5406ad3586f23ea2b5f05c6f4626fa62a03e0598667e09a5486e1e3b"
+        "sha256": "e1b93289fb5c4846fa0de8182abb7c91e0ab1f2a3b75586cde9bad69c6962b98"
       },
       "melonLoaderHost": {
         "fileName": "OperatorModAPI.MelonLoader.dll",
-        "bytes": 26112,
-        "sha256": "79a8491d2497c2a72859c6b05dd6ba8e475327fa54db47c0c5f3881f59e6cf6a"
+        "bytes": 26624,
+        "sha256": "1794332260be62b45b4ab87538e601ad420a09d40cfb28cbaa1d76a865286828"
       }
     },
     "runtimeCompanion": {
       "pluginGuid": "operator.vektor-killhouse",
-      "pluginVersion": "0.1.22",
-      "bytes": 471552,
-      "sha256": "1aacb146e41929ee8c04b04326c1bb9b0a5bac28a4c48f4fbc793ce03e3b7151",
-      "melonLoaderBytes": 472576,
-      "melonLoaderSha256": "b27de25c42e5ddc52188304b457da0ec99b082cd4e6fa45887d8a6b7cc78805f",
-      "runtimeContentId": "a14a5498c15931933432f3f20d942eb25b2a12cb70dc0beb5f178f13cfc3a706",
+      "pluginVersion": "0.1.24",
+      "bytes": 472064,
+      "sha256": "6bfdce20c3a91001df3d04d508a17747711c77145196714ea66ce5485e904f06",
+      "melonLoaderBytes": 473088,
+      "melonLoaderSha256": "f5b338bed818502130f7162e32156d8d55d0b7cc7cf18dcb583181d3c9434ecf",
+      "runtimeContentId": "f007d06f4a951ea1ae87cdab1f506d34941bb1a49a6d87c691a20a37ac1097e9",
       "sourceFile": "source/runtime/OperatorKillHousePlugin.cs",
-      "sourceBytes": 381884,
-      "sourceSha256": "be4de5b58865fcc6348d19ef3c8a851e1baa4f42da8614aaed5c4c6f5f493cf3",
+      "sourceBytes": 383659,
+      "sourceSha256": "964e757104a00ad1c5b6475bdfc7083dd9699be466516767b316675aede32dd8",
       "readyMarkerName": "MODDED_OPERATIONS_RUNTIME_CONTRACT_READY",
       "failureMarkerName": "MODDED_OPERATIONS_RUNTIME_CONTRACT_FAILED",
       "sceneScope": "exact-generation-scene",
@@ -192,7 +192,9 @@
     "preferDirectSharedWalls": true,
     "roomPartitionHeightMeters": 3.0,
     "roomHeightCeilingsAllowed": false,
-    "warehouseRoofHeightMeters": 11.35,
+    "warehouseVerticalScale": 1.2,
+    "warehouseRoofHeightMeters": 13.62,
+    "warehouseMinimumRoofElevationMeters": 8.7,
     "nativeWallModuleWidthMeters": 2.0
   },
   "warehouseShell": {
@@ -203,6 +205,8 @@
     "requiredParts": ["Base Warehouse", "OverHead Support", "Roof", "Support 2"],
     "roofAndOuterWallMaterial": "RM Steel smooth",
     "requiredPartCountPerVariant": 4,
+    "verticalScale": 1.2,
+    "minimumRoofElevationMeters": 8.7,
     "requiredMeshColliderCountPerVariant": 4,
     "obsoleteCorrugatedMaterialSlotsAllowed": 0,
     "groundApron": {
@@ -304,8 +308,10 @@
   "lighting": {
     "visibleFixtureSource": "Lamp_fluorescent_B",
     "fixtureRoofMountMode": "17x17-renderer-footprint-upward-interior-underside-query",
-    "fixtureRoofMountGapMeters": 0.08,
+    "fixtureRoofMountGapMeters": 0.24,
     "fixtureRoofMountToleranceMeters": 0.015,
+    "minimumFixtureRoofUndersideMeters": 8.7,
+    "fixtureBodyClearanceContract": "complete-renderer-bounds-remain-at-least-0.24m-below-the-lowest-sampled-corrugated-roof-underside",
     "fixtureLightDropBelowTopMeters": 0.18,
     "directionalLightsEnabled": 0,
     "nonFixturePointLights": 0,

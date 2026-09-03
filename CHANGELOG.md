@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.1.29 / companion 0.1.24 ceiling-clearance candidate — 2026-09-02
+
+- Raise the exact warehouse shell by 20 percent while keeping the authored
+  kill-house partitions, doors, navigation, and gameplay floor unchanged.
+- Increase the minimum interior roof height to 8.70 m and the roof peak to
+  13.62 m so the ceiling no longer crowds the modular rooms.
+- Remount every complete fluorescent fixture 0.240 m below its measured local
+  roof underside. The scene builder and runtime companion both fail closed on
+  a clipped, missing, or incorrectly spaced fixture.
+- Rebuild and load-verify all ten layouts and both AssetBundles under Unity
+  `6000.3.8f1`.
+- Pass fresh BepInEx and MelonLoader local PVE load/restart runs. Both runs kept
+  every fixture at the 0.240 m clearance, reported zero invalid mounts, spawned
+  and grounded all requested AI, and preserved the exact package closure.
+- Keep Modded Operations `0.3.35`, bundled Operator Mod API
+  `0.2.0-alpha.8`, the 10-60 PVE selector, and the separate 2-12 player PVP
+  operation unchanged.
+- Keep separate-PC PVE and PVP acceptance open. This remains a multiplayer
+  test candidate rather than a promoted Nexus release.
+- Pin BepInEx companion SHA-256
+  `6BFDCE20C3A91001DF3D04D508A17747711C77145196714EA66CE5485E904F06`
+  and MelonLoader companion SHA-256
+  `F5B338BED818502130F7162E32156D8D55D0B7CC7CF18DCB583181D3C9434ECF`.
+
 ## 0.1.28 / companion 0.1.23 dual-loader local-runtime candidate — 2026-09-02
 
 - Require Modded Operations `0.3.35` and bundled Operator Mod API

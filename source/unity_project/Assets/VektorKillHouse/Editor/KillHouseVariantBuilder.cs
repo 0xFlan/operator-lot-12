@@ -22,8 +22,17 @@ public static class KillHouseVariantBuilder
     private const float ExpansiveRoomSize = 12f;
     private const float WallModuleWidth = 2f;
     private const float PartitionHeight = 3.0f;
-    private const float WarehouseRoofHeight = 11.35f;
-    private const float WarehouseFixtureRoofGap = .08f;
+    // Preserve the exact four-part Woods Warehouse shell as one connected assembly while
+    // giving the open-top kill house more vertical breathing room.  Scaling the shell from
+    // its floor datum keeps the exterior walls, roof and supports joined; the 3 m modular
+    // partitions remain at their native height.
+    private const float WarehouseVerticalScale = 1.20f;
+    private const float WarehouseRoofHeight = 13.62f;
+    private const float WarehouseMinimumRoofElevation = 8.70f;
+    // The former 0.08 m mount gap passed collision checks but let the corrugated roof visually
+    // swallow the fixture housing at oblique player-camera angles.  A 0.24 m body clearance
+    // remains close-mounted while keeping the complete rendered fixture below the roof.
+    private const float WarehouseFixtureRoofGap = .24f;
     private const float WarehouseFixtureLightDrop = .18f;
     private static readonly Vector3 WarehouseFixtureVisualScale = new Vector3(1.75f, 2.5f, 1.5f);
     private const float WarehouseMargin = 4.0f;
@@ -707,7 +716,8 @@ public static class KillHouseVariantBuilder
             "PACKED_FOOTPRINT_BY_ACTUAL_ROOM_EXTENTS", "SHARED_WALLS_AND_SHORT_CONNECTORS_MAX_8M",
             "DOORV2_OFFICIAL_PREFAB_REQUIRED", "SPATIAL_MOTIF_" + variant.Motif.ToString().ToUpperInvariant(),
             "LOW_PARTITIONS_USE_NATIVE_SUBURB_COUNTERS", "PILLAR_CANDIDATE_PENDING_COMPLETE_CLOSURE",
-            "OPEN_TOP_KILLHOUSE_INSIDE_HIGH_WAREHOUSE", "WAREHOUSE_ROOF_HEIGHT_11_35M",
+            "OPEN_TOP_KILLHOUSE_INSIDE_HIGH_WAREHOUSE", "WAREHOUSE_ROOF_HEIGHT_13_62M",
+            "WAREHOUSE_VERTICAL_SCALE_1_20", "WAREHOUSE_MINIMUM_ROOF_ELEVATION_8_70M",
             "VANILLA_INDUSTRIAL_FLUORESCENT_FIXTURES", "NO_ROOM_HEIGHT_CEILINGS",
             "NO_SKY_NO_AMBIENT_NO_REFLECTION", "ONLY_VISIBLE_WAREHOUSE_FIXTURES_EMIT_LIGHT",
             "WALL_BACKED_FURNITURE_WITH_PORTAL_CLEARANCE", "CENTER_ROOM_FURNITURE_FULL_NATIVE_SCALE",
@@ -748,8 +758,8 @@ public static class KillHouseVariantBuilder
         shell.position = center;
         shell.rotation = Quaternion.Euler(0f, rotate ? 90f : 0f, 0f);
         shell.localScale = rotate
-            ? new Vector3(depth / sourceWidth, 1f, width / sourceDepth)
-            : new Vector3(width / sourceWidth, 1f, depth / sourceDepth);
+            ? new Vector3(depth / sourceWidth, WarehouseVerticalScale, width / sourceDepth)
+            : new Vector3(width / sourceWidth, WarehouseVerticalScale, depth / sourceDepth);
         Child(shell.gameObject, "WAREHOUSE_PREFAB_PVP_WOODS_EXACT_FOUR_PART");
 
         PlaceWarehousePart(shell, "Base Warehouse", "NATIVE_WarehouseBase",
@@ -1818,8 +1828,9 @@ public static class KillHouseVariantBuilder
         if (Vector3.Dot(fixture.TransformDirection(Vector3.back).normalized, Vector3.down) < .98f ||
             Vector3.Distance(fixture.localScale, WarehouseFixtureVisualScale) > .01f) return false;
         Renderer[] renderers = fixture.GetComponentsInChildren<Renderer>(true);
-        return TryFixtureRoofGap(fixture, warehouseRoofColliders, out float roofGap, out _) &&
+        return TryFixtureRoofGap(fixture, warehouseRoofColliders, out float roofGap, out float fixtureTop) &&
             Mathf.Abs(roofGap - WarehouseFixtureRoofGap) <= .015f &&
+            fixtureTop + roofGap >= WarehouseMinimumRoofElevation &&
             renderers.Length > 0 && renderers.All(renderer => renderer.sharedMaterials.Length > 0 &&
                 renderer.sharedMaterials.All(KillHouseNativeMaterialBuilder.HasKillHouseFluorescentEmissionContract));
     }
@@ -3714,6 +3725,10 @@ public static class KillHouseVariantBuilder
             item.name == "WAREHOUSE_PREFAB_PVP_WOODS_EXACT_FOUR_PART");
         const string warehouseMaterial = "MAT_NATIVE_RM_Steel_smooth";
         Transform warehouseShell = root.transform.Find("05_HIGH_WAREHOUSE_SHELL");
+        Transform warehouseCompleteShell = warehouseShell == null ? null :
+            warehouseShell.Find("NATIVE_WarehousePvpCompleteShell");
+        bool warehouseVerticalScaleValid = warehouseCompleteShell != null &&
+            Mathf.Abs(warehouseCompleteShell.localScale.y - WarehouseVerticalScale) <= .001f;
         int invalidWarehousePartFinish = warehouseParts.Count(part =>
             !AllRendererSlotsUseMaterial(part, warehouseMaterial));
         int warehouseSteelSlots = warehouseShell == null ? 0 :
@@ -3787,8 +3802,12 @@ public static class KillHouseVariantBuilder
         int obsoleteCorrugatedSlots = CountRendererSlotsUsingMaterial(root.transform,
             "MAT_NATIVE_Corrugated_Metal_Sheet_vb1lafx");
         Transform warehouseRoof = warehouseParts.FirstOrDefault(item => item.name == "NATIVE_WarehouseRoof");
-        float warehouseRoofElevation = warehouseRoof == null ? float.NaN :
-            warehouseRoof.GetComponentsInChildren<Renderer>(true).Max(renderer => renderer.bounds.max.y);
+        Renderer[] warehouseRoofRenderers = warehouseRoof == null ? Array.Empty<Renderer>() :
+            warehouseRoof.GetComponentsInChildren<Renderer>(true);
+        float warehouseRoofElevation = warehouseRoofRenderers.Length == 0 ? float.NaN :
+            warehouseRoofRenderers.Max(renderer => renderer.bounds.max.y);
+        float warehouseMinimumRoofElevation = warehouseRoofRenderers.Length == 0 ? float.NaN :
+            warehouseRoofRenderers.Min(renderer => renderer.bounds.min.y);
         Transform[] wallBackedProps = transforms.Where(item => Enumerable.Range(0, item.childCount)
             .Select(item.GetChild).Any(child => child.name.StartsWith("WALL_BACKED_PROP_OUTWARD_",
                 StringComparison.Ordinal))).ToArray();
@@ -3926,6 +3945,18 @@ public static class KillHouseVariantBuilder
             ? float.NaN : fixtureRoofGaps.Min();
         float maximumFixtureRoofGap = fixtureRoofGaps.Length == 0 || fixtureRoofGaps.Any(value => !float.IsFinite(value))
             ? float.NaN : fixtureRoofGaps.Max();
+        float[] fixtureRoofUndersides = fixtureVisuals.Select(item =>
+        {
+            return TryFixtureRoofGap(item, warehouseRoofColliders, out float gap, out float fixtureTop)
+                ? fixtureTop + gap
+                : float.NaN;
+        }).ToArray();
+        float minimumFixtureRoofUnderside = fixtureRoofUndersides.Length == 0 ||
+                                             fixtureRoofUndersides.Any(value => !float.IsFinite(value))
+            ? float.NaN : fixtureRoofUndersides.Min();
+        float maximumFixtureRoofUnderside = fixtureRoofUndersides.Length == 0 ||
+                                             fixtureRoofUndersides.Any(value => !float.IsFinite(value))
+            ? float.NaN : fixtureRoofUndersides.Max();
         Volume[] volumes = root.GetComponentsInChildren<Volume>(true);
         bool indoorVolumeValid = volumes.Length == 1 && IndoorVolumeValid(volumes[0]);
         int distinctTypes = layout.Rooms.Skip(1).Distinct().Count();
@@ -3967,11 +3998,13 @@ public static class KillHouseVariantBuilder
                       hallwaySideDoors >= 1 && fixedSafeDoorInterfaces == 2 && graphLoopRank >= 2 &&
                       alignedOpposingPortalPairs <= 1 && maximumAxialPortalRun <= 3 && distinctPortalOffsets >= 3 &&
                       spatialMotifMarkers == 1 && spatialFeatureCount >= 2 && roomCeilings == 0 &&
-                      warehouseShellGroups == 1 && warehouseParts.Length == 4 && warehouseFinishMarkers == 1 &&
+                      warehouseShellGroups == 1 && warehouseVerticalScaleValid && warehouseParts.Length == 4 &&
+                      warehouseFinishMarkers == 1 &&
                       invalidWarehousePartFinish == 0 && warehouseSteelSlots == 4 && warehouseMeshColliders == 4 &&
                       warehouseGrounds.Length == 1 && warehouseGroundValid &&
                       obsoleteWarehouseModules == 0 && obsoleteCorrugatedSlots == 0 &&
                       Mathf.Abs(warehouseRoofElevation - WarehouseRoofHeight) <= .2f &&
+                      warehouseMinimumRoofElevation >= WarehouseMinimumRoofElevation - .05f &&
                        wallBackedProps.Length >= 12 && invalidWallBackedFurniture == 0 &&
                        wallBackedProvenanceMarkers == wallBackedProps.Length && overlappingWallBackedFurniture == 0 &&
                        furnitureFilters.Length >= 12 && furnitureMeshFamilies >= WallBackedFurnitureContracts.Count &&
@@ -3991,7 +4024,9 @@ public static class KillHouseVariantBuilder
                       safeRoomMarkers == 1 && fallbackDirectionalLights == 1 && enabledDirectionalLights == 0 &&
                       fixtureLights.Length == expectedFixtureLights && pointLights == 0 && spotLights == fixtureLights.Length &&
                       invalidFixtureLights == 0 && fixtureVisuals.Length == expectedFixtureLights &&
-                      invalidFixtureVisuals == 0 && lightHolders.Length == cells.Length && safeRoomLit == 1 &&
+                      invalidFixtureVisuals == 0 &&
+                      minimumFixtureRoofUnderside >= WarehouseMinimumRoofElevation - .05f &&
+                      lightHolders.Length == cells.Length && safeRoomLit == 1 &&
                        shadowCastingFixtureLights == litRooms &&
                        litRooms >= 5 && dimRooms >= 4 && darkRooms >= 7 && indoorVolumeValid &&
                       blackWarehouseEnvironment &&
@@ -4042,7 +4077,9 @@ public static class KillHouseVariantBuilder
                 ", warehouseApronPerimeterFailure=" + warehouseApronPerimeterFailure +
                 ", obsoleteWarehouseModules=" + obsoleteWarehouseModules +
                 ", obsoleteCorrugatedSlots=" + obsoleteCorrugatedSlots +
+                ", warehouseVerticalScaleValid=" + warehouseVerticalScaleValid +
                 ", warehouseRoofElevation=" + warehouseRoofElevation.ToString("F2") +
+                ", warehouseMinimumRoofElevation=" + warehouseMinimumRoofElevation.ToString("F2") +
                 ", wallBackedFurniture=" + (wallBackedProps.Length - invalidWallBackedFurniture) + "/" +
                 wallBackedProps.Length + ", wallBackedBeds=" + (beds.Length - invalidWallBackedBeds) + "/" + beds.Length +
                 ", furnitureProvenanceMarkers=" + wallBackedProvenanceMarkers +
@@ -4077,6 +4114,10 @@ public static class KillHouseVariantBuilder
                 ", fixtureLights=" + fixtureLights.Length + "/" + expectedFixtureLights +
                 ", fixtureVisuals=" + fixtureVisuals.Length + "/" + expectedFixtureLights +
                 ", invalidFixtureVisuals=" + invalidFixtureVisuals +
+                ", fixtureRoofGap=" + minimumFixtureRoofGap.ToString("F3") + ".." +
+                maximumFixtureRoofGap.ToString("F3") +
+                ", fixtureRoofUnderside=" + minimumFixtureRoofUnderside.ToString("F2") + ".." +
+                maximumFixtureRoofUnderside.ToString("F2") +
                 ", roomLightStates=" + litRooms + "/" + dimRooms + "/" + darkRooms +
                 ", indoorVolume=" + indoorVolumeValid + ", blackWarehouseEnvironment=" + blackWarehouseEnvironment +
                 ", enabledDirectional=" + enabledDirectionalLights +
@@ -4084,7 +4125,7 @@ public static class KillHouseVariantBuilder
                 ", avgConnector=" + averageConnector.ToString("F1") + ".");
         return new JObject
         {
-            ["schema"] = "vektor-killhouse/scene-validation@19",
+            ["schema"] = "vektor-killhouse/scene-validation@20",
             ["generatedUtc"] = DateTime.UtcNow.ToString("O"),
             ["variantId"] = variant.Id,
             ["variantIndex"] = variantIndex + 1,
@@ -4114,12 +4155,15 @@ public static class KillHouseVariantBuilder
             ["distinctRoomModuleSizes"] = distinctRoomSizes,
             ["elongatedRoomModules"] = elongatedRooms,
             ["partitionHeightMeters"] = PartitionHeight,
+            ["warehouseVerticalScale"] = WarehouseVerticalScale,
             ["warehouseRoofHeightMeters"] = WarehouseRoofHeight,
+            ["warehouseMinimumRoofElevationRequiredMeters"] = WarehouseMinimumRoofElevation,
             ["roomHeightCeilings"] = roomCeilings,
             ["warehouseShellGroups"] = warehouseShellGroups,
             ["warehouseExactPrefabParts"] = warehouseParts.Length,
             ["warehouseMeshColliders"] = warehouseMeshColliders,
             ["warehouseRoofElevationMeters"] = warehouseRoofElevation,
+            ["warehouseMinimumRoofElevationMeters"] = warehouseMinimumRoofElevation,
             ["warehouseFinishMarkers"] = warehouseFinishMarkers,
             ["warehouseSteelMaterialSlots"] = warehouseSteelSlots,
             ["warehouseGroundAprons"] = warehouseGrounds.Length,
@@ -4332,6 +4376,8 @@ public static class KillHouseVariantBuilder
             ["fixtureRoofMountGapMeters"] = WarehouseFixtureRoofGap,
             ["minimumFixtureRoofGapMeters"] = minimumFixtureRoofGap,
             ["maximumFixtureRoofGapMeters"] = maximumFixtureRoofGap,
+            ["minimumFixtureRoofUndersideMeters"] = minimumFixtureRoofUnderside,
+            ["maximumFixtureRoofUndersideMeters"] = maximumFixtureRoofUnderside,
             ["fixtureLightDropBelowTopMeters"] = WarehouseFixtureLightDrop,
             ["fluorescentLitEmission"] = KillHouseNativeMaterialBuilder.KillHouseFluorescentLitEmission,
             ["fluorescentDimEmission"] = KillHouseNativeMaterialBuilder.KillHouseFluorescentDimEmission,
@@ -4501,7 +4547,7 @@ public static class KillHouseVariantBuilder
         Directory.CreateDirectory(Path.GetDirectoryName(path));
         JObject document = new JObject
         {
-            ["schema"] = "vektor-killhouse/aggregate-scene-validation@19",
+            ["schema"] = "vektor-killhouse/aggregate-scene-validation@20",
             ["generatedUtc"] = DateTime.UtcNow.ToString("O"),
             ["sceneCount"] = reports.Count,
             ["uniqueCycleCount"] = reports.Select(item => item.Value<string>("cycleMoves")).Distinct().Count(),
@@ -4549,6 +4595,12 @@ public static class KillHouseVariantBuilder
                                                  item.Value<float>("pvpMinimumOpposingSpawnDistanceMeters") >=
                                                  PvpMinimumOpposingDistance &&
                                                  item.Value<int>("pvpDirectOpposingLineOfSightPairs") == 0 &&
+                                                 Mathf.Abs(item.Value<float>("warehouseVerticalScale") -
+                                                           WarehouseVerticalScale) <= .001f &&
+                                                 item.Value<float>("warehouseMinimumRoofElevationMeters") >=
+                                                 WarehouseMinimumRoofElevation - .05f &&
+                                                 item.Value<float>("minimumFixtureRoofUndersideMeters") >=
+                                                 WarehouseMinimumRoofElevation - .05f &&
                                                  (item["pvpSpawnPlacements"] as JArray)?.Count ==
                                                  PvpSpawnsPerTeam * 2 &&
                                                  string.Equals(item.Value<string>("pvpSpawnContract"),

@@ -13,8 +13,8 @@ Related projects:
 
 | Component | Version/status |
 | --- | --- |
-| Map package | `0.1.28` |
-| Runtime companion | `0.1.23` (BepInEx and MelonLoader variants) |
+| Map package | `0.1.29` |
+| Runtime companion | `0.1.24` (BepInEx and MelonLoader variants) |
 | Required Modded Operations | `0.3.35` |
 | Bundled internal Operator Mod API | `0.2.0-alpha.8` |
 | PVE | 1-4 players; selectable 10-60 enemies |
@@ -34,7 +34,8 @@ supported until a real host and separate remote complete its paired-log matrix.
 - PVE clear-and-extract mission with a private vanilla-style 10-60 enemy selector.
 - Separate PVP operation for 2-12 players with six spawns per team.
 - Native OPERATOR doors, furniture, warehouse presentation, lighting, and post-processing.
-- Visible overhead fixtures mounted 0.080 m below the measured interior roof underside.
+- Warehouse shell raised by 20 percent while the 3 m kill-house partitions remain unchanged.
+- Visible overhead fixtures mounted 0.240 m below the measured interior roof underside.
 - Every active fixture lights nearby surfaces; one primary fixture per lit room
   owns soft shadows to avoid redundant indoor shadow maps.
 - Native weapon muzzle particles, flash objects, dynamic lights, and lit surface

@@ -3,7 +3,7 @@
   "schemaVersion": 2,
   "packageId": "community.vektor-modular-killhouse",
   "displayName": "LOT 12: FALSE WALL",
-  "version": "0.1.28",
+  "version": "0.1.29",
   "maps": [
     {
       "mapId": "community.vektor-modular-killhouse.modular-killhouse",
@@ -27,10 +27,10 @@
       ],
       "runtimeCompanion": {
         "pluginGuid": "operator.vektor-killhouse",
-        "pluginVersion": "0.1.23",
-        "sha256": "394638b4f53864d3be06d78e99fddad89057025ac37a836461b0d784fbbff013",
-        "melonLoaderSha256": "74cf2ea39225a6168df6445df8064867c72086a7c51f7eac8ea926fd34673260",
-        "runtimeContentId": "bb0ee9a64eb2b70a704d0baa6d4cd3be08493e2601d825f0680e6a34771ae00a",
+        "pluginVersion": "0.1.24",
+        "sha256": "6bfdce20c3a91001df3d04d508a17747711c77145196714ea66ce5485e904f06",
+        "melonLoaderSha256": "f5b338bed818502130f7162e32156d8d55d0b7cc7cf18dcb583181d3c9434ecf",
+        "runtimeContentId": "f007d06f4a951ea1ae87cdab1f506d34941bb1a49a6d87c691a20a37ac1097e9",
         "readyMarkerName": "MODDED_OPERATIONS_RUNTIME_CONTRACT_READY",
         "failureMarkerName": "MODDED_OPERATIONS_RUNTIME_CONTRACT_FAILED"
       },
@@ -111,8 +111,8 @@
     },
     {
       "path": "content/operator_vektor_killhouse_scenes",
-      "bytes": 781404,
-      "sha256": "c2c1bc3a49e2f941d6a1e1bbfb1e956e2786ab8b3d8e6737f36f8c8e31306a5f"
+      "bytes": 783696,
+      "sha256": "9308aa597db137a32efe90763a8e2cfc543be1e13e53a1b84787976988726ddc"
     },
     {
       "path": "media/vektor_modular_killhouse_preview.png",
